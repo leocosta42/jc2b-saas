@@ -68,7 +68,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
     <div className="bg-gray-100 min-h-screen font-sans print:bg-white text-black py-8 print:py-0">
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          @page { margin: 10mm; }
+          @page { margin: 15mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}} />
@@ -88,7 +88,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         </button>
       </div>
 
-      <div className="max-w-[800px] mx-auto bg-white border border-gray-300 print:border-none p-8 relative shadow-lg print:shadow-none print:p-0">
+      <div className="max-w-[800px] mx-auto bg-white border border-gray-300 print:border-none p-8 relative shadow-lg print:shadow-none">
         
         {/* Header Superior */}
         <div className="flex justify-between items-start mb-2">
