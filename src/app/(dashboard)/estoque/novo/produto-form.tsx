@@ -1,12 +1,38 @@
 'use client'
 
-import { Save, ArrowLeft, Package, Box, DollarSign } from 'lucide-react'
+import { Save, ArrowLeft, Package, Box, DollarSign, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState, useTransition } from 'react'
+import { createProduto } from '@/app/actions/produtos'
 
-export function ProdutoForm() {
+export function ProdutoForm({ fornecedores }: { fornecedores: any[] }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  const [custo, setCusto] = useState(0)
+  const [venda, setVenda] = useState(0)
+
+  const lucroReais = venda - custo
+  const lucroPercent = custo > 0 ? (lucroReais / custo) * 100 : (venda > 0 ? 100 : 0)
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    startTransition(async () => {
+      const res = await createProduto(formData)
+      if (res.error) {
+        alert(res.error)
+      } else {
+        router.push("/estoque")
+        router.refresh()
+      }
+    })
+  }
+
   return (
     <div className="max-w-4xl rounded-xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden">
-      <form className="space-y-0">
+      <form onSubmit={handleSubmit} className="space-y-0">
         
         {/* Identificação */}
         <div className="p-6 pb-4 border-b border-border/50 bg-muted/20">
@@ -17,16 +43,16 @@ export function ProdutoForm() {
         </div>
         <div className="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Código</label>
-            <input type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Código" />
+            <label className="text-sm font-medium">Código / SKU</label>
+            <input name="codigo" type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Ex: PROD001" />
           </div>
           <div className="space-y-2 lg:col-span-2">
             <label className="text-sm font-medium">Descrição <span className="text-destructive">*</span></label>
-            <input type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Nome / Descrição do Produto" required />
+            <input name="descricao" type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Nome / Descrição do Produto" required />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">U.M (Unid. de Medida)</label>
-            <input type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="UN, CX, KG..." />
+            <input name="um" type="text" defaultValue="UN" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="UN, CX, KG..." />
           </div>
         </div>
 
@@ -42,26 +68,26 @@ export function ProdutoForm() {
             <label className="text-sm font-medium">Valor Custo R$</label>
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">R$</span>
-              <input type="number" step="0.01" className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0,00" />
+              <input name="preco_custo" type="number" step="0.01" value={custo || ''} onChange={(e) => setCusto(Number(e.target.value))} className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0.00" />
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Valor Venda R$</label>
+            <label className="text-sm font-medium">Valor Venda R$ <span className="text-destructive">*</span></label>
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">R$</span>
-              <input type="number" step="0.01" className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0,00" />
+              <input name="preco_venda" type="number" step="0.01" value={venda || ''} onChange={(e) => setVenda(Number(e.target.value))} className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0.00" required />
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Lucro R$</label>
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">R$</span>
-              <input type="number" step="0.01" readOnly className="flex h-10 w-full rounded-md border border-input bg-muted/50 pl-9 pr-3 py-2 text-sm text-emerald-500 font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0,00" />
+              <input type="text" readOnly value={lucroReais.toFixed(2)} className="flex h-10 w-full rounded-md border border-input bg-muted/50 pl-9 pr-3 py-2 text-sm text-emerald-500 font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" />
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Lucro %</label>
-            <input type="text" readOnly className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm text-emerald-500 font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0%" />
+            <input type="text" readOnly value={`${lucroPercent.toFixed(1)}%`} className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm text-emerald-500 font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" />
           </div>
         </div>
 
@@ -72,25 +98,21 @@ export function ProdutoForm() {
             Estoque & Fornecedor
           </h3>
         </div>
-        <div className="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
             <label className="text-sm font-medium">Saldo Estoque</label>
-            <input type="number" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0" />
+            <input name="quantidade_estoque" type="number" defaultValue="0" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0" />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Custo Atual R$</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">R$</span>
-              <input type="number" step="0.01" readOnly className="flex h-10 w-full rounded-md border border-input bg-muted/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0,00" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Cód. Fornecedor</label>
-            <input type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Código Forn." />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Fornecedor</label>
-            <input type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Nome do Fornecedor" />
+          <div className="space-y-2 lg:col-span-2">
+            <label className="text-sm font-medium">Pesquisar Fornecedor</label>
+            <select name="fornecedor_id" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500">
+              <option value="">Nenhum fornecedor vinculado</option>
+              {fornecedores.map(f => (
+                <option key={f.id} value={f.id}>
+                  {f.codigo ? `[${f.codigo}] ` : ''}{f.nome}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -98,8 +120,9 @@ export function ProdutoForm() {
           <Link href="/estoque" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-border/50 hover:bg-muted/50 h-10 px-5 py-2">
             <ArrowLeft className="mr-2 h-4 w-4" /> Cancelar
           </Link>
-          <button type="button" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-indigo-500 hover:bg-indigo-600 text-white shadow-md shadow-indigo-500/20 h-10 px-5 py-2">
-            <Save className="mr-2 h-4 w-4" /> Salvar Produto
+          <button type="submit" disabled={isPending} className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-indigo-500 hover:bg-indigo-600 text-white shadow-md shadow-indigo-500/20 h-10 px-5 py-2 disabled:opacity-50">
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {isPending ? "Salvando..." : "Salvar Produto"}
           </button>
         </div>
       </form>

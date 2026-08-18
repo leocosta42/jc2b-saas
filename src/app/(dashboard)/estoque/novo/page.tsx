@@ -1,6 +1,9 @@
 import { ProdutoForm } from './produto-form'
+import { getFornecedoresList } from '@/app/actions/produtos'
 
-export default function NovoProdutoPage() {
+export default async function NovoProdutoPage() {
+  const fornecedores = await getFornecedoresList()
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       <div>
@@ -9,7 +12,7 @@ export default function NovoProdutoPage() {
           Cadastre um novo item no estoque.
         </p>
       </div>
-      <ProdutoForm />
+      <ProdutoForm fornecedores={fornecedores} />
     </div>
   )
 }
