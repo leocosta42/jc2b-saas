@@ -6,7 +6,7 @@ export default async function ClientesPage() {
   let clientes: Cliente[] = []
   
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Fetch clientes from database
     const { data } = await supabase

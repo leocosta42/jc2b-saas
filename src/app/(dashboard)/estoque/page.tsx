@@ -6,7 +6,7 @@ export default async function EstoquePage() {
   let produtos: Produto[] = []
   
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     const { data } = await supabase
       .from('produtos')

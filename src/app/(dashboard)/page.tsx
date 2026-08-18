@@ -4,7 +4,7 @@ import { Activity, CreditCard, DollarSign, Users } from 'lucide-react'
 
 export default async function DashboardPage() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

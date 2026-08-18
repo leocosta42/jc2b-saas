@@ -2,12 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { PedidoForm } from './pedido-form'
 
 export default async function NovoPedidoPage() {
-  let clientes = []
-  let produtos = []
-  let vendedores = []
+  let clientes: any[] = []
+  let produtos: any[] = []
+  let vendedores: any[] = []
 
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Tenta buscar do banco real
     const [resClientes, resProdutos, resVendedores] = await Promise.all([
