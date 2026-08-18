@@ -70,12 +70,12 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
       {/* Botão de impressão (não aparece no PDF/impressão final) */}
       <div className="max-w-[800px] mx-auto mb-4 print:hidden text-right">
         <button 
-          onClick="window.print()" 
+          id="btn-print"
           className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700"
           dangerouslySetInnerHTML={{ __html: '&#128424; Imprimir / Salvar PDF' }}
         />
         <button 
-          onClick="window.close()" 
+          id="btn-close"
           className="ml-2 bg-gray-300 text-black px-6 py-2 rounded shadow hover:bg-gray-400"
         >
           Fechar
@@ -223,9 +223,10 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         {/* Adiciona um script client-side pequeno para habilitar os botões html básicos */}
         <script dangerouslySetInnerHTML={{ __html: `
           document.addEventListener("DOMContentLoaded", () => {
-            const btns = document.querySelectorAll('button');
-            btns[0].onclick = () => window.print();
-            btns[1].onclick = () => window.close();
+            const btnPrint = document.getElementById('btn-print');
+            if (btnPrint) btnPrint.onclick = () => window.print();
+            const btnClose = document.getElementById('btn-close');
+            if (btnClose) btnClose.onclick = () => window.close();
           });
         `}} />
       </div>
