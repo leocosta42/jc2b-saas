@@ -32,7 +32,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
   const [observacoes, setObservacoes] = useState("")
 
   // Itens
-  const [itens, setItens] = useState([{ id: Date.now(), produto_id: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
+  const [itens, setItens] = useState([{ id: Date.now(), produto_id: "", produto_sku: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
   const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null)
 
   const clienteSelecionado = dadosForm.clientes.find(c => c.id === clienteId)
@@ -42,6 +42,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
     if (produto) {
       const novosItens = [...itens]
       novosItens[index].produto_id = produtoId
+      novosItens[index].produto_sku = produto.sku || ""
       novosItens[index].preco_unitario = produto.preco_venda || 0
       setItens(novosItens)
     }
@@ -54,7 +55,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
   }
 
   const addItem = () => {
-    setItens([...itens, { id: Date.now(), produto_id: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
+    setItens([...itens, { id: Date.now(), produto_id: "", produto_sku: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
   }
 
   const removeItem = (index: number) => {
@@ -190,11 +191,12 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
               </h3>
             </div>
             
-            <div className="p-0 overflow-x-auto">
+            <div className="p-0 overflow-visible">
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted/30 border-b text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 w-10">Item</th>
+                    <th className="px-4 py-3 w-32">Código</th>
                     <th className="px-4 py-3 min-w-[200px]">Produto / Descrição</th>
                     <th className="px-4 py-3 w-20">U.M</th>
                     <th className="px-4 py-3 w-24">Qtde</th>
@@ -211,6 +213,29 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
                     return (
                       <tr key={item.id} className="hover:bg-muted/20">
                         <td className="px-4 py-2 text-center font-medium">{index + 1}</td>
+                        <td className="px-4 py-2">
+                          <input 
+                            type="text"
+                            value={item.produto_sku || ''}
+                            onChange={(e) => updateItem(index, 'produto_sku', e.target.value)}
+                            onBlur={(e) => {
+                              const val = e.target.value;
+                              if (!val) return;
+                              const p = dadosForm.produtos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
+                              if (p) {
+                                handleProdutoChange(index, p.id);
+                                updateItem(index, 'produto_nome', p.nome);
+                              } else {
+                                updateItem(index, 'produto_id', '');
+                                updateItem(index, 'produto_nome', '');
+                                updateItem(index, 'preco_unitario', 0);
+                                alert("Produto não encontrado pelo código.");
+                              }
+                            }}
+                            placeholder="Cód..."
+                            className="w-full h-8 rounded border border-border/50 bg-background px-2 text-sm focus:ring-1 focus:ring-primary/50 text-center uppercase"
+                          />
+                        </td>
                         <td className="px-4 py-2 relative">
                           <input 
                             type="text"
