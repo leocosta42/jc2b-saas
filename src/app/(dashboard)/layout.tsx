@@ -19,9 +19,9 @@ export default function DashboardLayout({
               <LayoutDashboard className="h-5 w-5" />
               Dashboard
             </Link>
-            <Link href="/pedidos" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted transition-all">
+            <Link href="/orcamentos" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted transition-all">
               <FileText className="h-5 w-5" />
-              Pedidos
+              Vendas (Orçamentos)
             </Link>
             <Link href="/clientes" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted transition-all">
               <Users className="h-5 w-5" />
