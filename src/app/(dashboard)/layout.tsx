@@ -31,6 +31,10 @@ export default function DashboardLayout({
               <Package className="h-5 w-5" />
               Estoque
             </Link>
+            <Link href="/estatisticas" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted transition-all">
+              <FileText className="h-5 w-5" />
+              Estatísticas
+            </Link>
             <Link href="/configuracoes" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted transition-all">
               <Settings className="h-5 w-5" />
               Configurações

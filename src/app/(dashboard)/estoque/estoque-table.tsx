@@ -1,147 +1,216 @@
 'use client'
 
+import { useState } from 'react'
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
+  getSortedRowModel,
+  SortingState,
 } from "@tanstack/react-table"
-import { MoreHorizontal, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { MoreHorizontal, ArrowUpDown, Search, Edit, Trash2 } from "lucide-react"
 
 export type Produto = {
   id: string
-  sku: string | null
-  nome: string
-  preco_venda: number
-  quantidade_estoque: number
-  estoque_minimo: number
+  codigo: string
+  descricao: string
+  um: string
+  valor_custo: number
+  valor_venda: number
+  lucro_rs: number
+  lucro_porcentagem: string
+  saldo_estoque: number
+  custo_estoque_atual: number
+  fornecedor: string
+  cod_forn: string
 }
 
 export const columns: ColumnDef<Produto>[] = [
   {
-    accessorKey: "sku",
-    header: "SKU",
-    cell: ({ row }) => <div className="text-muted-foreground font-mono text-xs">{row.getValue("sku") || '-'}</div>,
+    accessorKey: "codigo",
+    header: "Código",
+    cell: ({ row }) => <div className="text-indigo-500 font-semibold">{row.getValue("codigo")}</div>,
   },
   {
-    accessorKey: "nome",
-    header: "Produto",
-    cell: ({ row }) => <div className="font-medium text-foreground">{row.getValue("nome")}</div>,
+    accessorKey: "descricao",
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+      >
+        Descrição
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    ),
+    cell: ({ row }) => <div className="font-medium whitespace-nowrap">{row.getValue("descricao")}</div>,
   },
   {
-    accessorKey: "preco_venda",
-    header: "Preço de Venda",
+    accessorKey: "um",
+    header: "U.M",
+    cell: ({ row }) => <div className="text-muted-foreground text-xs">{row.getValue("um")}</div>,
+  },
+  {
+    accessorKey: "valor_custo",
+    header: () => <div className="text-right">Valor Custo R$</div>,
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("preco_venda"))
-      const formatted = new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }).format(amount)
-      return <div className="text-foreground">{formatted}</div>
+      const amount = parseFloat(row.getValue("valor_custo"))
+      const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amount)
+      return <div className="text-right">{formatted}</div>
     },
   },
   {
-    accessorKey: "quantidade_estoque",
-    header: "Estoque Atual",
+    accessorKey: "valor_venda",
+    header: () => <div className="text-right">Valor Venda R$</div>,
     cell: ({ row }) => {
-      const qtd = parseInt(row.getValue("quantidade_estoque"))
-      return <div className="font-medium">{qtd} un.</div>
+      const amount = parseFloat(row.getValue("valor_venda"))
+      const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amount)
+      return <div className="text-right font-medium text-indigo-500">{formatted}</div>
     },
   },
   {
-    id: "status",
-    header: "Status",
+    accessorKey: "lucro_rs",
+    header: () => <div className="text-right">Lucro R$</div>,
     cell: ({ row }) => {
-      const qtd = parseInt(row.getValue("quantidade_estoque"))
-      const min = parseInt(row.original.estoque_minimo as any)
-      
-      if (qtd <= min) {
-        return (
-          <div className="flex items-center text-destructive text-sm font-medium bg-destructive/10 w-fit px-2.5 py-1 rounded-full border border-destructive/20">
-            <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Reordem
-          </div>
-        )
-      }
-      return (
-        <div className="flex items-center text-emerald-600 text-sm font-medium bg-emerald-500/10 w-fit px-2.5 py-1 rounded-full border border-emerald-500/20">
-          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Em dia
-        </div>
-      )
+      const amount = parseFloat(row.getValue("lucro_rs"))
+      const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amount)
+      return <div className="text-right text-emerald-500">{formatted}</div>
     },
+  },
+  {
+    accessorKey: "lucro_porcentagem",
+    header: "Lucro %",
+    cell: ({ row }) => <div className="text-emerald-500">{row.getValue("lucro_porcentagem")}</div>,
+  },
+  {
+    accessorKey: "saldo_estoque",
+    header: () => <div className="text-right">Saldo Estoque</div>,
+    cell: ({ row }) => {
+      const qtd = parseInt(row.getValue("saldo_estoque"))
+      return <div className="text-right font-medium">{qtd}</div>
+    },
+  },
+  {
+    accessorKey: "custo_estoque_atual",
+    header: () => <div className="text-right">Custo Estoque Atual R$</div>,
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue("custo_estoque_atual"))
+      const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amount)
+      return <div className="text-right">{formatted}</div>
+    },
+  },
+  {
+    accessorKey: "fornecedor",
+    header: "Fornecedor",
+    cell: ({ row }) => (
+      <div className="flex flex-col">
+        <span className="text-xs text-muted-foreground">{row.original.cod_forn}</span>
+        <span className="whitespace-nowrap">{row.getValue("fornecedor")}</span>
+      </div>
+    ),
   },
   {
     id: "actions",
-    cell: () => {
-      return (
-        <button className="h-8 w-8 p-0 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground transition-colors ml-auto">
-          <span className="sr-only">Abrir menu</span>
-          <MoreHorizontal className="h-4 w-4" />
+    cell: () => (
+      <div className="flex justify-end gap-1">
+        <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+          <Edit className="h-4 w-4" />
         </button>
-      )
-    },
+        <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    ),
   },
 ]
 
-interface DataTableProps<TData> {
-  data: TData[]
+interface DataTableProps {
+  data: Produto[]
 }
 
-export function EstoqueTable<TData>({
-  data,
-}: DataTableProps<TData>) {
+export function EstoqueTable({ data }: DataTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [filter, setFilter] = useState("")
+
+  const filteredData = data.filter(item => 
+    item.descricao.toLowerCase().includes(filter.toLowerCase()) ||
+    item.codigo.toLowerCase().includes(filter.toLowerCase())
+  )
+
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns: columns as any,
     getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
   })
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm text-card-foreground shadow-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="border-b bg-muted/30">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <th key={header.id} className="h-12 px-6 text-left align-middle font-medium text-muted-foreground">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </th>
-                )
-              })}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-y divide-border/50">
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className="transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted/50"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-6 align-middle">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <input
+            placeholder="Buscar por código ou descrição..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-border/50 bg-background/50 pl-8 pr-3 py-2 text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm text-card-foreground shadow-sm overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="border-b bg-muted/30">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <th key={header.id} className="h-12 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </th>
+                  )
+                })}
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={columns.length} className="h-32 text-center text-muted-foreground">
-                <div className="flex flex-col items-center justify-center space-y-2">
-                  <span className="text-lg">Nenhum produto cadastrado no estoque.</span>
-                  <span className="text-sm">Clique em "Novo Produto" para começar.</span>
-                </div>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            ))}
+          </thead>
+          <tbody className="divide-y divide-border/50">
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="transition-colors hover:bg-muted/40"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="p-4 align-middle">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length} className="h-32 text-center text-muted-foreground">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <span className="text-lg">Nenhum produto encontrado.</span>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="text-sm text-muted-foreground pl-1">
+        Mostrando {table.getRowModel().rows.length} de {data.length} registros.
+      </div>
     </div>
   )
 }
