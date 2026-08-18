@@ -192,7 +192,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
               </h3>
             </div>
             
-            <div className="p-0 overflow-visible">
+            <div className="p-0 overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted/30 border-b text-xs uppercase text-muted-foreground">
                   <tr>
@@ -215,7 +215,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
                       <tr key={item.id} className="hover:bg-muted/20">
                         <td className="px-4 py-2 text-center font-medium">{index + 1}</td>
                         <td className="px-4 py-2">
-                          <div className="flex items-center gap-1">
+                          <div className="relative w-full">
                             <input 
                               type="text"
                               value={item.produto_sku || ''}
@@ -250,12 +250,13 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
                                   updateItem(index, 'preco_unitario', 0);
                                 }
                               }}
-                              className="w-full h-8 rounded border border-border/50 bg-background px-2 text-sm focus:ring-1 focus:ring-primary/50 uppercase"
+                              placeholder="Cód..."
+                              className="w-full h-8 rounded border border-border/50 bg-background pl-2 pr-8 text-sm focus:ring-1 focus:ring-primary/50 uppercase"
                             />
                             <button 
                               type="button"
                               onClick={() => setModalProdutoOpen({isOpen: true, index})}
-                              className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded border border-border/50 bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                              className="absolute right-1 top-1 h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
                               title="Consultar Produto"
                             >
                               <Search className="h-4 w-4" />
