@@ -193,18 +193,18 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
             </div>
             
             <div className="p-0 overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-sm text-left min-w-[1000px]">
                 <thead className="bg-muted/30 border-b text-xs uppercase text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 w-10">Item</th>
-                    <th className="px-4 py-3 w-40">Produto</th>
-                    <th className="px-4 py-3 min-w-[200px]">Descrição</th>
-                    <th className="px-4 py-3 w-20">U.M</th>
-                    <th className="px-4 py-3 w-24">Qtde</th>
-                    <th className="px-4 py-3 w-32">V. Unit (R$)</th>
-                    <th className="px-4 py-3 w-24">Desc %</th>
-                    <th className="px-4 py-3 w-32">Subtotal</th>
-                    <th className="px-4 py-3 w-10"></th>
+                    <th className="px-4 py-3 min-w-[60px] w-10">Item</th>
+                    <th className="px-4 py-3 min-w-[160px] w-40">Produto</th>
+                    <th className="px-4 py-3 min-w-[250px]">Descrição</th>
+                    <th className="px-4 py-3 min-w-[80px] w-20">U.M</th>
+                    <th className="px-4 py-3 min-w-[100px] w-24">Qtde</th>
+                    <th className="px-4 py-3 min-w-[120px] w-32">V. Unit (R$)</th>
+                    <th className="px-4 py-3 min-w-[100px] w-24">Desc %</th>
+                    <th className="px-4 py-3 min-w-[120px] w-32">Subtotal</th>
+                    <th className="px-4 py-3 min-w-[50px] w-10"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
