@@ -8,8 +8,8 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
   if (res.error || !res.data) return notFound()
 
   const doc = res.data
-  const cliente = doc.clientes || {}
-  const vendedor = doc.vendedores || {}
+  const cliente: any = Array.isArray(doc.clientes) ? doc.clientes[0] : (doc.clientes || {})
+  const vendedor: any = Array.isArray(doc.vendedores) ? doc.vendedores[0] : (doc.vendedores || {})
   const itens = doc.itens_pedido || []
 
   const tipo = doc.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido de Venda'
