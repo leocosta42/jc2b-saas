@@ -46,7 +46,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
   })
 
   // Preencher linhas vazias para manter layout
-  const maxLines = 15
+  const maxLines = 8
   if (itensRender.length < maxLines) {
     for (let i = itensRender.length; i < maxLines; i++) {
       itensRender.push(
@@ -160,7 +160,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         </div>
 
         {/* Produtos Tabela */}
-        <div className="border border-black mt-2 h-[450px] flex flex-col">
+        <div className="border border-black mt-2 flex flex-col">
           <div className="bg-gray-200 border-b border-black text-center font-bold text-xs py-0.5">
             PRODUTOS
           </div>
