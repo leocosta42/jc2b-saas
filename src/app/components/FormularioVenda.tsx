@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { createDocumento } from "@/app/actions/vendas"
-import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2, Search } from "lucide-react"
 import Link from "next/link"
 
 interface Props {
@@ -33,7 +33,8 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
 
   // Itens
   const [itens, setItens] = useState([{ id: Date.now(), produto_id: "", produto_sku: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
-  const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null)
+  const [modalProdutoOpen, setModalProdutoOpen] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null})
+  const [buscaModal, setBuscaModal] = useState("")
 
   const clienteSelecionado = dadosForm.clientes.find(c => c.id === clienteId)
 
@@ -196,8 +197,8 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
                 <thead className="bg-muted/30 border-b text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 w-10">Item</th>
-                    <th className="px-4 py-3 w-32">Código</th>
-                    <th className="px-4 py-3 min-w-[200px]">Produto / Descrição</th>
+                    <th className="px-4 py-3 w-40">Produto</th>
+                    <th className="px-4 py-3 min-w-[200px]">Descrição</th>
                     <th className="px-4 py-3 w-20">U.M</th>
                     <th className="px-4 py-3 w-24">Qtde</th>
                     <th className="px-4 py-3 w-32">V. Unit (R$)</th>
@@ -214,64 +215,57 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
                       <tr key={item.id} className="hover:bg-muted/20">
                         <td className="px-4 py-2 text-center font-medium">{index + 1}</td>
                         <td className="px-4 py-2">
-                          <input 
-                            type="text"
-                            value={item.produto_sku || ''}
-                            onChange={(e) => updateItem(index, 'produto_sku', e.target.value)}
-                            onBlur={(e) => {
-                              const val = e.target.value;
-                              if (!val) return;
-                              const p = dadosForm.produtos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
-                              if (p) {
-                                handleProdutoChange(index, p.id);
-                                updateItem(index, 'produto_nome', p.nome);
-                              } else {
-                                updateItem(index, 'produto_id', '');
-                                updateItem(index, 'produto_nome', '');
-                                updateItem(index, 'preco_unitario', 0);
-                                alert("Produto não encontrado pelo código.");
-                              }
-                            }}
-                            placeholder="Cód..."
-                            className="w-full h-8 rounded border border-border/50 bg-background px-2 text-sm focus:ring-1 focus:ring-primary/50 text-center uppercase"
-                          />
+                          <div className="flex items-center gap-1">
+                            <input 
+                              type="text"
+                              value={item.produto_sku || ''}
+                              onChange={(e) => updateItem(index, 'produto_sku', e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const val = e.currentTarget.value;
+                                  if (!val) return;
+                                  const p = dadosForm.produtos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
+                                  if (p) {
+                                    handleProdutoChange(index, p.id);
+                                    updateItem(index, 'produto_nome', p.nome);
+                                  } else {
+                                    updateItem(index, 'produto_id', '');
+                                    updateItem(index, 'produto_nome', '');
+                                    updateItem(index, 'preco_unitario', 0);
+                                    alert("Produto não encontrado pelo código.");
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (!val) return;
+                                const p = dadosForm.produtos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
+                                if (p) {
+                                  handleProdutoChange(index, p.id);
+                                  updateItem(index, 'produto_nome', p.nome);
+                                } else {
+                                  updateItem(index, 'produto_id', '');
+                                  updateItem(index, 'produto_nome', '');
+                                  updateItem(index, 'preco_unitario', 0);
+                                }
+                              }}
+                              className="w-full h-8 rounded border border-border/50 bg-background px-2 text-sm focus:ring-1 focus:ring-primary/50 uppercase"
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => setModalProdutoOpen({isOpen: true, index})}
+                              className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded border border-border/50 bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                              title="Consultar Produto"
+                            >
+                              <Search className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
-                        <td className="px-4 py-2 relative">
-                          <input 
-                            type="text"
-                            value={item.produto_nome || ''}
-                            onFocus={() => setFocusedItemIndex(index)}
-                            onBlur={() => setTimeout(() => setFocusedItemIndex(null), 200)}
-                            onChange={(e) => {
-                              const val = e.target.value
-                              updateItem(index, 'produto_nome', val)
-                              if (val === '') updateItem(index, 'produto_id', '')
-                            }}
-                            placeholder="Digite para buscar..."
-                            className="w-full h-8 rounded border border-border/50 bg-background px-2 text-sm focus:ring-1 focus:ring-primary/50"
-                          />
-                          {focusedItemIndex === index && (
-                            <div className="absolute z-50 left-4 right-4 top-10 max-h-60 overflow-y-auto rounded-md border border-border/50 bg-background shadow-xl p-1">
-                              {dadosForm.produtos
-                                .filter(p => !item.produto_nome || ((p.sku ? `[${p.sku}] ` : '') + p.nome).toLowerCase().includes(item.produto_nome.toLowerCase()))
-                                .map(p => (
-                                  <div 
-                                    key={p.id} 
-                                    className="cursor-pointer select-none rounded-sm px-2 py-1.5 text-sm hover:bg-primary/10 hover:text-primary"
-                                    onClick={() => {
-                                      updateItem(index, 'produto_nome', (p.sku ? `[${p.sku}] ` : '') + p.nome)
-                                      handleProdutoChange(index, p.id)
-                                      setFocusedItemIndex(null)
-                                    }}
-                                  >
-                                    {p.sku ? `[${p.sku}] ` : ''}{p.nome}
-                                  </div>
-                                ))}
-                                {dadosForm.produtos.filter(p => !item.produto_nome || ((p.sku ? `[${p.sku}] ` : '') + p.nome).toLowerCase().includes(item.produto_nome.toLowerCase())).length === 0 && (
-                                  <div className="px-2 py-2 text-sm text-muted-foreground text-center">Nenhum produto encontrado.</div>
-                                )}
-                            </div>
-                          )}
+                        <td className="px-4 py-2">
+                          <div className="w-full min-h-8 px-2 py-1.5 text-sm text-foreground truncate select-none">
+                            {item.produto_nome || <span className="text-muted-foreground/50 italic">Selecione...</span>}
+                          </div>
                         </td>
                         <td className="px-4 py-2">
                           <input type="text" value={item.unidade_medida} onChange={(e) => updateItem(index, 'unidade_medida', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-center" />
@@ -390,6 +384,83 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
 
         </div>
       </div>
+
+      {/* Modal Consulta Produto (Estilo Protheus) */}
+      {modalProdutoOpen.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-background rounded-lg shadow-2xl w-full max-w-4xl border border-border flex flex-col h-[600px] max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" />
+                Consulta Padrão - Produto
+              </h2>
+              <button onClick={() => setModalProdutoOpen({isOpen: false, index: null})} className="text-muted-foreground hover:text-foreground">
+                ✕
+              </button>
+            </div>
+            <div className="p-4 border-b border-border bg-muted/10">
+              <input 
+                type="text" 
+                placeholder="Buscar por código ou descrição..." 
+                value={buscaModal}
+                onChange={(e) => setBuscaModal(e.target.value)}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 focus:ring-2 focus:ring-primary/50"
+                autoFocus
+              />
+            </div>
+            <div className="flex-1 overflow-auto p-0 bg-background">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 sticky top-0 shadow-sm">
+                  <tr>
+                    <th className="px-4 py-2 w-48 font-medium">Código</th>
+                    <th className="px-4 py-2 font-medium">Descrição</th>
+                    <th className="px-4 py-2 w-32 text-right font-medium">Preço</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {dadosForm.produtos
+                    .filter(p => !buscaModal || (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) || p.nome.toLowerCase().includes(buscaModal.toLowerCase()))
+                    .map(p => (
+                      <tr 
+                        key={p.id} 
+                        className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors group"
+                        onClick={() => {
+                          if (modalProdutoOpen.index !== null) {
+                            handleProdutoChange(modalProdutoOpen.index, p.id)
+                            updateItem(modalProdutoOpen.index, 'produto_nome', p.nome)
+                          }
+                          setModalProdutoOpen({isOpen: false, index: null})
+                          setBuscaModal("")
+                        }}
+                      >
+                        <td className="px-4 py-2 font-medium">{p.sku || '-'}</td>
+                        <td className="px-4 py-2 group-hover:font-medium">{p.nome}</td>
+                        <td className="px-4 py-2 text-right">
+                          {(p.preco_venda || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </td>
+                      </tr>
+                    ))}
+                    {dadosForm.produtos.filter(p => !buscaModal || (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) || p.nome.toLowerCase().includes(buscaModal.toLowerCase())).length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                          Nenhum produto encontrado na consulta.
+                        </td>
+                      </tr>
+                    )}
+                </tbody>
+              </table>
+            </div>
+            <div className="p-4 border-t border-border flex justify-end bg-muted/30">
+              <button 
+                onClick={() => setModalProdutoOpen({isOpen: false, index: null})}
+                className="px-6 py-2 bg-background border border-border text-foreground rounded-md hover:bg-muted font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
