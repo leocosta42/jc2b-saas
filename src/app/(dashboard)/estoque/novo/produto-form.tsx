@@ -6,12 +6,21 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { createProduto } from '@/app/actions/produtos'
 
-export function ProdutoForm({ fornecedores }: { fornecedores: any[] }) {
+export function ProdutoForm({ 
+  fornecedores, 
+  nextSku,
+  produtoCopiar 
+}: { 
+  fornecedores: any[], 
+  nextSku: string,
+  produtoCopiar?: any
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const [custo, setCusto] = useState(0)
-  const [venda, setVenda] = useState(0)
+  const [codigo, setCodigo] = useState(nextSku)
+  const [custo, setCusto] = useState(produtoCopiar?.preco_custo || 0)
+  const [venda, setVenda] = useState(produtoCopiar?.preco_venda || 0)
 
   const lucroReais = venda - custo
   const lucroPercent = custo > 0 ? (lucroReais / custo) * 100 : (venda > 0 ? 100 : 0)
@@ -43,16 +52,32 @@ export function ProdutoForm({ fornecedores }: { fornecedores: any[] }) {
         </div>
         <div className="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Código / SKU</label>
-            <input name="codigo" type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Ex: PROD001" />
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Código / SKU</label>
+              <button 
+                type="button" 
+                onClick={() => setCodigo(nextSku)}
+                className="text-xs text-indigo-500 hover:text-indigo-600 font-medium"
+              >
+                Gerar Sequencial
+              </button>
+            </div>
+            <input 
+              name="codigo" 
+              type="text" 
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" 
+              placeholder="Ex: PROD001" 
+            />
           </div>
           <div className="space-y-2 lg:col-span-2">
             <label className="text-sm font-medium">Descrição <span className="text-destructive">*</span></label>
-            <input name="descricao" type="text" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Nome / Descrição do Produto" required />
+            <input name="descricao" type="text" defaultValue={produtoCopiar?.nome || ''} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Nome / Descrição do Produto" required />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">U.M (Unid. de Medida)</label>
-            <input name="um" type="text" defaultValue="UN" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="UN, CX, KG..." />
+            <input name="um" type="text" defaultValue={produtoCopiar?.descricao || "UN"} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="UN, CX, KG..." />
           </div>
         </div>
 
@@ -101,11 +126,11 @@ export function ProdutoForm({ fornecedores }: { fornecedores: any[] }) {
         <div className="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
             <label className="text-sm font-medium">Saldo Estoque</label>
-            <input name="quantidade_estoque" type="number" defaultValue="0" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0" />
+            <input name="quantidade_estoque" type="number" defaultValue={produtoCopiar ? 0 : "0"} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0" />
           </div>
           <div className="space-y-2 lg:col-span-2">
             <label className="text-sm font-medium">Pesquisar Fornecedor</label>
-            <select name="fornecedor_id" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500">
+            <select name="fornecedor_id" defaultValue={produtoCopiar?.fornecedor_id || ""} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500">
               <option value="">Nenhum fornecedor vinculado</option>
               {fornecedores.map(f => (
                 <option key={f.id} value={f.id}>

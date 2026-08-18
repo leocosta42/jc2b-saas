@@ -72,3 +72,52 @@ export async function getFornecedoresList() {
 
   return data || []
 }
+
+export async function getNextSku() {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return 'PD-000001'
+
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return 'PD-000001'
+
+  // Busca o último produto que comece com PD- e tenha números
+  const { data, error } = await supabase
+    .from('produtos')
+    .select('sku')
+    .eq('tenant_id', tenantId)
+    .ilike('sku', 'PD-%')
+    .order('sku', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error || !data || !data.sku) {
+    return 'PD-000001'
+  }
+
+  const match = data.sku.match(/PD-(\d+)/i)
+  if (match && match[1]) {
+    const nextNum = parseInt(match[1], 10) + 1
+    return `PD-${String(nextNum).padStart(6, '0')}`
+  }
+
+  return 'PD-000001'
+}
+
+export async function getProdutoById(id: string) {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return null
+
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return null
+
+  const { data } = await supabase
+    .from('produtos')
+    .select('*')
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+    .single()
+
+  return data
+}

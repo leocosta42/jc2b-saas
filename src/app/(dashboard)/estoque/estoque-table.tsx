@@ -9,7 +9,8 @@ import {
   getSortedRowModel,
   SortingState,
 } from "@tanstack/react-table"
-import { MoreHorizontal, ArrowUpDown, Search, Edit, Trash2 } from "lucide-react"
+import { MoreHorizontal, ArrowUpDown, Search, Edit, Trash2, Copy } from "lucide-react"
+import Link from "next/link"
 
 export type Produto = {
   id: string
@@ -111,8 +112,15 @@ export const columns: ColumnDef<Produto>[] = [
   },
   {
     id: "actions",
-    cell: () => (
+    cell: ({ row }) => (
       <div className="flex justify-end gap-1">
+        <Link 
+          href={`/estoque/novo?copy_id=${row.original.id}`}
+          className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-indigo-500 transition-colors"
+          title="Copiar Produto"
+        >
+          <Copy className="h-4 w-4" />
+        </Link>
         <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
           <Edit className="h-4 w-4" />
         </button>
