@@ -32,7 +32,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
   const [observacoes, setObservacoes] = useState("")
 
   // Itens
-  const [itens, setItens] = useState([{ id: Date.now(), produto_id: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
+  const [itens, setItens] = useState([{ id: Date.now(), produto_id: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
 
   const clienteSelecionado = dadosForm.clientes.find(c => c.id === clienteId)
 
@@ -53,7 +53,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
   }
 
   const addItem = () => {
-    setItens([...itens, { id: Date.now(), produto_id: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
+    setItens([...itens, { id: Date.now(), produto_id: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
   }
 
   const removeItem = (index: number) => {
@@ -210,17 +210,30 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
                     return (
                       <tr key={item.id} className="hover:bg-muted/20">
                         <td className="px-4 py-2 text-center font-medium">{index + 1}</td>
-                        <td className="px-4 py-2">
-                          <select 
-                            value={item.produto_id}
-                            onChange={(e) => handleProdutoChange(index, e.target.value)}
+                        <td className="px-4 py-2 relative">
+                          <input 
+                            type="text"
+                            list={`produtos-list-${index}`}
+                            value={item.produto_nome || ''}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              updateItem(index, 'produto_nome', val)
+                              
+                              const p = dadosForm.produtos.find(prod => (prod.sku ? `[${prod.sku}] ` : '') + prod.nome === val)
+                              if (p) {
+                                handleProdutoChange(index, p.id)
+                              } else {
+                                updateItem(index, 'produto_id', '')
+                              }
+                            }}
+                            placeholder="Digite para buscar..."
                             className="w-full h-8 rounded border border-border/50 bg-background px-2 text-sm focus:ring-1 focus:ring-primary/50"
-                          >
-                            <option value="">Selecione...</option>
+                          />
+                          <datalist id={`produtos-list-${index}`}>
                             {dadosForm.produtos.map(p => (
-                              <option key={p.id} value={p.id}>{p.sku ? `[${p.sku}] ` : ''}{p.nome}</option>
+                              <option key={p.id} value={(p.sku ? `[${p.sku}] ` : '') + p.nome} />
                             ))}
-                          </select>
+                          </datalist>
                         </td>
                         <td className="px-4 py-2">
                           <input type="text" value={item.unidade_medida} onChange={(e) => updateItem(index, 'unidade_medida', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-center" />
