@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2 } from "lucide-react"
+import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2, Printer } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { convertToPedido } from "@/app/actions/vendas"
 
@@ -115,6 +115,14 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
                 <span className="text-xs font-semibold hidden lg:inline">Aprovar</span>
               </button>
             )}
+            <a 
+              href={`/imprimir/${p.id}`}
+              target="_blank"
+              title="Imprimir / Gerar PDF"
+              className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+            >
+              <Printer className="h-4 w-4" />
+            </a>
             <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
               <Download className="h-4 w-4" />
             </button>
