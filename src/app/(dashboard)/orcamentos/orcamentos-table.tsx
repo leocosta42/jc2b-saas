@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -9,7 +9,9 @@ import {
   getSortedRowModel,
   SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search, Download, Edit } from "lucide-react"
+import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { convertToPedido } from "@/app/actions/vendas"
 
 export type Pedido = {
   id: string
@@ -30,6 +32,21 @@ export type Pedido = {
 export function OrcamentosTable({ data }: { data: Pedido[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  const handleAprovar = (id: string) => {
+    if (!confirm("Tem certeza que deseja aprovar este orçamento? O estoque dos itens será baixado e ele se tornará um pedido.")) return
+    
+    startTransition(async () => {
+      const res = await convertToPedido(id)
+      if (res.error) {
+        alert(res.error)
+      } else {
+        router.refresh()
+      }
+    })
+  }
 
   const filteredData = data.filter(pedido => 
     pedido.cliente.toLowerCase().includes(filter.toLowerCase()) ||
@@ -47,14 +64,9 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
       header: "Tipo",
       cell: ({ row }) => {
         const tipo = row.getValue("tipo") as string
-        const color = tipo === 'Venda' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+        const color = tipo === 'PEDIDO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
         return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${color}`}>{tipo}</span>
       },
-    },
-    {
-      accessorKey: "cod_cliente",
-      header: "Cód Cliente",
-      cell: ({ row }) => <div className="text-muted-foreground text-xs">{row.getValue("cod_cliente")}</div>,
     },
     {
       accessorKey: "cliente",
@@ -75,15 +87,10 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
       cell: ({ row }) => <div className="whitespace-nowrap">{row.getValue("data_emissao")}</div>,
     },
     {
-      accessorKey: "data_entrega",
-      header: "Entrega",
-      cell: ({ row }) => <div className="whitespace-nowrap">{row.getValue("data_entrega")}</div>,
-    },
-    {
       accessorKey: "valor_total",
       header: () => <div className="text-right">Valor Total</div>,
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("valor_total"))
+        const amount = parseFloat(row.getValue("valor_total")) || 0
         const formatted = new Intl.NumberFormat("pt-BR", {
           style: "currency",
           currency: "BRL",
@@ -92,49 +99,31 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
       },
     },
     {
-      accessorKey: "vendedor",
-      header: "Vendedor",
-      cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">{row.original.cod_vendedor}</span>
-          <span className="whitespace-nowrap">{row.getValue("vendedor")}</span>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "comissao_venda",
-      header: () => <div className="text-right">Comissão</div>,
+      id: "actions",
       cell: ({ row }) => {
-        const comissao = parseFloat(row.getValue("comissao_venda"))
-        const percent = row.original.comissao
-        const formatted = new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        }).format(comissao)
+        const p = row.original
         return (
-          <div className="flex flex-col text-right">
-            <span className="text-emerald-500 font-medium">{formatted}</span>
-            <span className="text-xs text-muted-foreground">{percent}</span>
+          <div className="flex justify-end gap-2">
+            {p.tipo === 'ORCAMENTO' && (
+              <button 
+                onClick={() => handleAprovar(p.id)}
+                disabled={isPending}
+                title="Aprovar Orçamento e Gerar Pedido"
+                className="h-8 flex items-center gap-1 px-2 rounded-md bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50"
+              >
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                <span className="text-xs font-semibold hidden lg:inline">Aprovar</span>
+              </button>
+            )}
+            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+              <Download className="h-4 w-4" />
+            </button>
+            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+              <Edit className="h-4 w-4" />
+            </button>
           </div>
         )
       },
-    },
-    {
-      accessorKey: "mes",
-      header: "Mês",
-    },
-    {
-      id: "actions",
-      cell: () => (
-        <div className="flex justify-end gap-1">
-          <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-            <Download className="h-4 w-4" />
-          </button>
-          <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-            <Edit className="h-4 w-4" />
-          </button>
-        </div>
-      ),
     },
   ]
 
