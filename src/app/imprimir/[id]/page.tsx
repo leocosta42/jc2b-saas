@@ -66,6 +66,12 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="bg-gray-100 min-h-screen font-sans print:bg-white text-black py-8 print:py-0">
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page { margin: 10mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}} />
       
       {/* Botão de impressão (não aparece no PDF/impressão final) */}
       <div className="max-w-[800px] mx-auto mb-4 print:hidden text-right">
@@ -82,7 +88,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         </button>
       </div>
 
-      <div className="max-w-[800px] mx-auto bg-white border border-gray-300 print:border-none p-8 min-h-[1050px] relative shadow-lg print:shadow-none">
+      <div className="max-w-[800px] mx-auto bg-white border border-gray-300 print:border-none p-8 relative shadow-lg print:shadow-none print:p-0">
         
         {/* Header Superior */}
         <div className="flex justify-between items-start mb-2">
@@ -154,11 +160,11 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         </div>
 
         {/* Produtos Tabela */}
-        <div className="border border-black mt-2 min-h-[400px]">
+        <div className="border border-black mt-2 h-[450px] flex flex-col">
           <div className="bg-gray-200 border-b border-black text-center font-bold text-xs py-0.5">
             PRODUTOS
           </div>
-          <table className="w-full text-xs">
+          <table className="w-full text-xs flex-1">
             <thead>
               <tr className="border-b border-black">
                 <th className="font-normal w-8 py-1">Item</th>
@@ -211,7 +217,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         </div>
 
         {/* Assinaturas */}
-        <div className="mt-20 flex justify-center gap-16 text-xs text-center">
+        <div className="mt-8 mb-4 flex justify-center gap-16 text-xs text-center">
           <div className="w-64 border-t border-black pt-2">
             Cliente
           </div>
