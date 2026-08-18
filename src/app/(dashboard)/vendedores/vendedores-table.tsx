@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -10,6 +10,8 @@ import {
   SortingState,
 } from "@tanstack/react-table"
 import { ArrowUpDown, Search, Edit, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { deleteVendedor } from "@/app/actions/vendedores"
 
 export type Vendedor = {
   id: string
@@ -85,16 +87,10 @@ export function VendedoresTable({ data }: { data: Vendedor[] }) {
     },
     {
       id: "actions",
-      cell: () => {
+      cell: ({ row }) => {
+        const vendedor = row.original
         return (
-          <div className="flex justify-end gap-2">
-            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-              <Edit className="h-4 w-4" />
-            </button>
-            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive transition-colors">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
+          <ActionButtons vendedor={vendedor} />
         )
       },
     },
@@ -172,6 +168,44 @@ export function VendedoresTable({ data }: { data: Vendedor[] }) {
       <div className="text-sm text-muted-foreground pl-1">
         Mostrando {table.getRowModel().rows.length} de {data.length} vendedores.
       </div>
+    </div>
+  )
+}
+
+function ActionButtons({ vendedor }: { vendedor: Vendedor }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  const handleDelete = () => {
+    if (!confirm(`Tem certeza que deseja excluir o vendedor "${vendedor.nome}"? Esta ação não pode ser desfeita.`)) return
+
+    startTransition(async () => {
+      const res = await deleteVendedor(vendedor.id)
+      if (res.error) {
+        alert("Erro ao excluir: " + res.error)
+      } else {
+        router.refresh()
+      }
+    })
+  }
+
+  return (
+    <div className="flex justify-end gap-2">
+      <button
+        onClick={() => router.push(`/vendedores/${vendedor.id}/editar`)}
+        title="Editar vendedor"
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-blue-500/10 hover:text-blue-500 transition-colors"
+      >
+        <Edit className="h-4 w-4" />
+      </button>
+      <button
+        onClick={handleDelete}
+        disabled={isPending}
+        title="Excluir vendedor"
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors disabled:opacity-40"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   )
 }

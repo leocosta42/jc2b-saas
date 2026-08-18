@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -10,6 +10,8 @@ import {
   SortingState,
 } from "@tanstack/react-table"
 import { ArrowUpDown, Search, Edit, Trash2, Users } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { deleteCliente } from "@/app/actions/clientes"
 
 export type Cliente = {
   id: string
@@ -26,7 +28,7 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
 
-  const filteredData = data.filter(cliente => 
+  const filteredData = data.filter(cliente =>
     cliente.nome.toLowerCase().includes(filter.toLowerCase()) ||
     (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(filter))
   )
@@ -34,17 +36,15 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
   const columns: ColumnDef<Cliente>[] = [
     {
       accessorKey: "nome",
-      header: ({ column }) => {
-        return (
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
-          >
-            Nome / Razão Social
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        )
-      },
+      header: ({ column }) => (
+        <button
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+        >
+          Nome / Razão Social
+          <ArrowUpDown className="h-4 w-4" />
+        </button>
+      ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400">
@@ -83,7 +83,9 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
       header: "Status",
       cell: ({ row }) => {
         const status = row.getValue("status") as string
-        const bgColor = status === 'Ativo' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'
+        const bgColor = status === 'Ativo'
+          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+          : 'bg-muted text-muted-foreground border-border'
         return (
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${bgColor}`}>
             {status}
@@ -93,18 +95,7 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
     },
     {
       id: "actions",
-      cell: () => {
-        return (
-          <div className="flex justify-end gap-2">
-            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-              <Edit className="h-4 w-4" />
-            </button>
-            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive transition-colors">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        )
-      },
+      cell: ({ row }) => <ActionButtons cliente={row.original} />,
     },
   ]
 
@@ -114,9 +105,7 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    state: {
-      sorting,
-    },
+    state: { sorting },
   })
 
   return (
@@ -138,28 +127,18 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
           <thead className="border-b bg-muted/30">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <th key={header.id} className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </th>
-                  )
-                })}
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id} className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
               </tr>
             ))}
           </thead>
           <tbody className="divide-y divide-border/50">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="transition-colors hover:bg-muted/40"
-                >
+                <tr key={row.id} className="transition-colors hover:bg-muted/40">
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="p-4 align-middle">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -180,6 +159,44 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
       <div className="text-sm text-muted-foreground pl-1">
         Mostrando {table.getRowModel().rows.length} de {data.length} clientes.
       </div>
+    </div>
+  )
+}
+
+function ActionButtons({ cliente }: { cliente: Cliente }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  const handleDelete = () => {
+    if (!confirm(`Tem certeza que deseja excluir o cliente "${cliente.nome}"? Esta ação não pode ser desfeita.`)) return
+
+    startTransition(async () => {
+      const res = await deleteCliente(cliente.id)
+      if (res.error) {
+        alert("Erro ao excluir: " + res.error)
+      } else {
+        router.refresh()
+      }
+    })
+  }
+
+  return (
+    <div className="flex justify-end gap-2">
+      <button
+        onClick={() => router.push(`/clientes/${cliente.id}/editar`)}
+        title="Editar cliente"
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-violet-500/10 hover:text-violet-500 transition-colors"
+      >
+        <Edit className="h-4 w-4" />
+      </button>
+      <button
+        onClick={handleDelete}
+        disabled={isPending}
+        title="Excluir cliente"
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors disabled:opacity-40"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   )
 }

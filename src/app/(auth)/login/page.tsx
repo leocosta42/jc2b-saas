@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Package } from 'lucide-react'
 
-export default async function LoginPage({ searchParams }: { searchParams: { message: string, mode: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message?: string, mode?: string }> }) {
   const supabase = await createClient()
   
   const { data: { session } } = await supabase.auth.getSession()
@@ -12,7 +12,9 @@ export default async function LoginPage({ searchParams }: { searchParams: { mess
     return redirect('/')
   }
 
-  const isRegister = searchParams.mode === 'register'
+  const resolvedParams = await searchParams;
+  const isRegister = resolvedParams?.mode === 'register'
+  const message = resolvedParams?.message
 
   const authenticate = async (formData: FormData) => {
     'use server'
@@ -55,9 +57,9 @@ export default async function LoginPage({ searchParams }: { searchParams: { mess
           </p>
         </div>
 
-        {searchParams?.message && (
+        {message && (
           <div className="p-3 bg-muted text-foreground text-center text-sm rounded-lg border border-border">
-            {searchParams.message}
+            {message}
           </div>
         )}
 
