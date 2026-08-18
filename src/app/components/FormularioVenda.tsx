@@ -33,6 +33,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
 
   // Itens
   const [itens, setItens] = useState([{ id: Date.now(), produto_id: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
+  const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null)
 
   const clienteSelecionado = dadosForm.clientes.find(c => c.id === clienteId)
 
@@ -213,27 +214,39 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
                         <td className="px-4 py-2 relative">
                           <input 
                             type="text"
-                            list={`produtos-list-${index}`}
                             value={item.produto_nome || ''}
+                            onFocus={() => setFocusedItemIndex(index)}
+                            onBlur={() => setTimeout(() => setFocusedItemIndex(null), 200)}
                             onChange={(e) => {
                               const val = e.target.value
                               updateItem(index, 'produto_nome', val)
-                              
-                              const p = dadosForm.produtos.find(prod => (prod.sku ? `[${prod.sku}] ` : '') + prod.nome === val)
-                              if (p) {
-                                handleProdutoChange(index, p.id)
-                              } else {
-                                updateItem(index, 'produto_id', '')
-                              }
+                              if (val === '') updateItem(index, 'produto_id', '')
                             }}
                             placeholder="Digite para buscar..."
                             className="w-full h-8 rounded border border-border/50 bg-background px-2 text-sm focus:ring-1 focus:ring-primary/50"
                           />
-                          <datalist id={`produtos-list-${index}`}>
-                            {dadosForm.produtos.map(p => (
-                              <option key={p.id} value={(p.sku ? `[${p.sku}] ` : '') + p.nome} />
-                            ))}
-                          </datalist>
+                          {focusedItemIndex === index && (
+                            <div className="absolute z-50 left-4 right-4 top-10 max-h-60 overflow-y-auto rounded-md border border-border/50 bg-background shadow-xl p-1">
+                              {dadosForm.produtos
+                                .filter(p => !item.produto_nome || ((p.sku ? `[${p.sku}] ` : '') + p.nome).toLowerCase().includes(item.produto_nome.toLowerCase()))
+                                .map(p => (
+                                  <div 
+                                    key={p.id} 
+                                    className="cursor-pointer select-none rounded-sm px-2 py-1.5 text-sm hover:bg-primary/10 hover:text-primary"
+                                    onClick={() => {
+                                      updateItem(index, 'produto_nome', (p.sku ? `[${p.sku}] ` : '') + p.nome)
+                                      handleProdutoChange(index, p.id)
+                                      setFocusedItemIndex(null)
+                                    }}
+                                  >
+                                    {p.sku ? `[${p.sku}] ` : ''}{p.nome}
+                                  </div>
+                                ))}
+                                {dadosForm.produtos.filter(p => !item.produto_nome || ((p.sku ? `[${p.sku}] ` : '') + p.nome).toLowerCase().includes(item.produto_nome.toLowerCase())).length === 0 && (
+                                  <div className="px-2 py-2 text-sm text-muted-foreground text-center">Nenhum produto encontrado.</div>
+                                )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-2">
                           <input type="text" value={item.unidade_medida} onChange={(e) => updateItem(index, 'unidade_medida', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-center" />
