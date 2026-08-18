@@ -76,32 +76,32 @@ export async function getFornecedoresList() {
 export async function getNextSku() {
   const supabase = await createClient()
   const { data: authData } = await supabase.auth.getUser()
-  if (!authData?.user) return 'PD-000001'
+  if (!authData?.user) return 'PRO0001'
 
   const tenantId = await getTenantId(supabase, authData.user.id)
-  if (!tenantId) return 'PD-000001'
+  if (!tenantId) return 'PRO0001'
 
-  // Busca o último produto que comece com PD- e tenha números
+  // Busca o último produto que comece com PRO e tenha números
   const { data, error } = await supabase
     .from('produtos')
     .select('sku')
     .eq('tenant_id', tenantId)
-    .ilike('sku', 'PD-%')
+    .ilike('sku', 'PRO%')
     .order('sku', { ascending: false })
     .limit(1)
     .single()
 
   if (error || !data || !data.sku) {
-    return 'PD-000001'
+    return 'PRO0001'
   }
 
-  const match = data.sku.match(/PD-(\d+)/i)
+  const match = data.sku.match(/PRO(\d+)/i)
   if (match && match[1]) {
     const nextNum = parseInt(match[1], 10) + 1
-    return `PD-${String(nextNum).padStart(6, '0')}`
+    return `PRO${String(nextNum).padStart(4, '0')}`
   }
 
-  return 'PD-000001'
+  return 'PRO0001'
 }
 
 export async function getProdutoById(id: string) {
