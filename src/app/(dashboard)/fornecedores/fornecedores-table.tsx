@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -10,6 +10,8 @@ import {
   SortingState,
 } from "@tanstack/react-table"
 import { ArrowUpDown, Search, Edit, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { deleteFornecedor } from "@/app/actions/fornecedores"
 
 export type Fornecedor = {
   id: string
@@ -18,6 +20,8 @@ export type Fornecedor = {
   cnpj_cpf: string
   telefone: string
   email: string
+  cidade?: string
+  estado?: string
   status: "Ativo" | "Inativo"
 }
 
@@ -25,9 +29,9 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
 
-  const filteredData = data.filter(forn => 
-    forn.nome.toLowerCase().includes(filter.toLowerCase()) || 
-    forn.cnpj_cpf.includes(filter) ||
+  const filteredData = data.filter(forn =>
+    forn.nome.toLowerCase().includes(filter.toLowerCase()) ||
+    (forn.cnpj_cpf && forn.cnpj_cpf.includes(filter)) ||
     (forn.codigo && forn.codigo.toLowerCase().includes(filter.toLowerCase()))
   )
 
@@ -39,40 +43,40 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
     },
     {
       accessorKey: "nome",
-      header: ({ column }) => {
-        return (
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
-          >
-            Nome
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        )
-      },
-      cell: ({ row }) => <div className="font-medium">{row.getValue("nome")}</div>,
+      header: ({ column }) => (
+        <button
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+        >
+          Nome / Razão Social
+          <ArrowUpDown className="h-4 w-4" />
+        </button>
+      ),
+      cell: ({ row }) => <div className="font-medium text-foreground">{row.getValue("nome")}</div>,
     },
     {
       accessorKey: "cnpj_cpf",
       header: "CNPJ / CPF",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("cnpj_cpf")}</div>,
+      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("cnpj_cpf") || '-'}</div>,
     },
     {
       accessorKey: "telefone",
       header: "Telefone",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("telefone")}</div>,
+      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("telefone") || '-'}</div>,
     },
     {
       accessorKey: "email",
       header: "E-mail",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("email")}</div>,
+      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("email") || '-'}</div>,
     },
     {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
         const status = row.getValue("status") as string
-        const bgColor = status === 'Ativo' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'
+        const bgColor = status === 'Ativo'
+          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+          : 'bg-muted text-muted-foreground border-border'
         return (
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${bgColor}`}>
             {status}
@@ -82,18 +86,7 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
     },
     {
       id: "actions",
-      cell: () => {
-        return (
-          <div className="flex justify-end gap-2">
-            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-              <Edit className="h-4 w-4" />
-            </button>
-            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive transition-colors">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        )
-      },
+      cell: ({ row }) => <ActionButtons fornecedor={row.original} />,
     },
   ]
 
@@ -103,9 +96,7 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    state: {
-      sorting,
-    },
+    state: { sorting },
   })
 
   return (
@@ -127,28 +118,18 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
           <thead className="border-b bg-muted/30">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <th key={header.id} className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </th>
-                  )
-                })}
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id} className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
               </tr>
             ))}
           </thead>
           <tbody className="divide-y divide-border/50">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="transition-colors hover:bg-muted/40"
-                >
+                <tr key={row.id} className="transition-colors hover:bg-muted/40">
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="p-4 align-middle">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -169,6 +150,44 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
       <div className="text-sm text-muted-foreground pl-1">
         Mostrando {table.getRowModel().rows.length} de {data.length} fornecedores.
       </div>
+    </div>
+  )
+}
+
+function ActionButtons({ fornecedor }: { fornecedor: Fornecedor }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  const handleDelete = () => {
+    if (!confirm(`Tem certeza que deseja excluir o fornecedor "${fornecedor.nome}"? Esta ação não pode ser desfeita.`)) return
+
+    startTransition(async () => {
+      const res = await deleteFornecedor(fornecedor.id)
+      if (res.error) {
+        alert("Erro ao excluir: " + res.error)
+      } else {
+        router.refresh()
+      }
+    })
+  }
+
+  return (
+    <div className="flex justify-end gap-2">
+      <button
+        onClick={() => router.push(`/fornecedores/${fornecedor.id}/editar`)}
+        title="Editar fornecedor"
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-orange-500/10 hover:text-orange-500 transition-colors"
+      >
+        <Edit className="h-4 w-4" />
+      </button>
+      <button
+        onClick={handleDelete}
+        disabled={isPending}
+        title="Excluir fornecedor"
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors disabled:opacity-40"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   )
 }
