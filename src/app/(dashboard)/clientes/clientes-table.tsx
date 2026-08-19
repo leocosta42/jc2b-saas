@@ -24,6 +24,72 @@ export type Cliente = {
   status: "Ativo" | "Inativo"
 }
 
+export const columns: ColumnDef<Cliente>[] = [
+  {
+    accessorKey: "nome",
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+      >
+        Nome / Razão Social
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400">
+          <Users className="h-4 w-4" />
+        </div>
+        <span className="font-medium text-foreground">{row.getValue("nome")}</span>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "cpf_cnpj",
+    header: "CPF/CNPJ",
+    cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("cpf_cnpj") || '-'}</div>,
+  },
+  {
+    accessorKey: "celular",
+    header: "Celular",
+    cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("celular") || '-'}</div>,
+  },
+  {
+    accessorKey: "email",
+    header: "E-mail",
+    cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("email") || '-'}</div>,
+  },
+  {
+    accessorKey: "cidade",
+    header: "Localização",
+    cell: ({ row }) => {
+      const cidade = row.getValue("cidade") as string
+      const estado = row.original.estado
+      return <div className="text-muted-foreground">{cidade && estado ? `${cidade} - ${estado}` : '-'}</div>
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string
+      const bgColor = status === 'Ativo'
+        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+        : 'bg-muted text-muted-foreground border-border'
+      return (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${bgColor}`}>
+          {status}
+        </span>
+      )
+    }
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => <ActionButtons cliente={row.original} />,
+  },
+]
+
 export function ClientesTable({ data }: { data: Cliente[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
@@ -32,72 +98,6 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
     cliente.nome.toLowerCase().includes(filter.toLowerCase()) ||
     (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(filter))
   )
-
-  const columns: ColumnDef<Cliente>[] = [
-    {
-      accessorKey: "nome",
-      header: ({ column }) => (
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
-        >
-          Nome / Razão Social
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400">
-            <Users className="h-4 w-4" />
-          </div>
-          <span className="font-medium text-foreground">{row.getValue("nome")}</span>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "cpf_cnpj",
-      header: "CPF/CNPJ",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("cpf_cnpj") || '-'}</div>,
-    },
-    {
-      accessorKey: "celular",
-      header: "Celular",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("celular") || '-'}</div>,
-    },
-    {
-      accessorKey: "email",
-      header: "E-mail",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("email") || '-'}</div>,
-    },
-    {
-      accessorKey: "cidade",
-      header: "Localização",
-      cell: ({ row }) => {
-        const cidade = row.getValue("cidade") as string
-        const estado = row.original.estado
-        return <div className="text-muted-foreground">{cidade && estado ? `${cidade} - ${estado}` : '-'}</div>
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string
-        const bgColor = status === 'Ativo'
-          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-          : 'bg-muted text-muted-foreground border-border'
-        return (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${bgColor}`}>
-            {status}
-          </span>
-        )
-      }
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => <ActionButtons cliente={row.original} />,
-    },
-  ]
 
   const table = useReactTable({
     data: filteredData,

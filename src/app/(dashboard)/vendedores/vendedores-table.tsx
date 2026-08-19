@@ -24,6 +24,69 @@ export type Vendedor = {
   status: "Ativo" | "Inativo"
 }
 
+export const columns: ColumnDef<Vendedor>[] = [
+  {
+    accessorKey: "codigo",
+    header: "Código",
+    cell: ({ row }) => <span className="font-semibold text-blue-500">{row.getValue("codigo") || '-'}</span>,
+  },
+  {
+    accessorKey: "nome",
+    header: ({ column }) => {
+      return (
+        <button
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+        >
+          Nome
+          <ArrowUpDown className="h-4 w-4" />
+        </button>
+      )
+    },
+    cell: ({ row }) => <div className="font-medium text-foreground">{row.getValue("nome")}</div>,
+  },
+  {
+    accessorKey: "cpf_cnpj",
+    header: "CPF/CNPJ",
+    cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("cpf_cnpj") || '-'}</div>,
+  },
+  {
+    accessorKey: "telefone",
+    header: "Telefone",
+    cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("telefone") || '-'}</div>,
+  },
+  {
+    accessorKey: "comissao_percentual",
+    header: "Comissão (%)",
+    cell: ({ row }) => {
+      const val = parseFloat(row.getValue("comissao_percentual"))
+      return <div className="font-medium">{val.toFixed(2)}%</div>
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string
+      const bgColor = status === 'Ativo' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'
+      return (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${bgColor}`}>
+          {status}
+        </span>
+      )
+    }
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const vendedor = row.original
+      return (
+        <ActionButtons vendedor={vendedor} />
+      )
+    },
+  },
+]
+
 export function VendedoresTable({ data }: { data: Vendedor[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
@@ -32,69 +95,6 @@ export function VendedoresTable({ data }: { data: Vendedor[] }) {
     vend.nome.toLowerCase().includes(filter.toLowerCase()) ||
     (vend.codigo && vend.codigo.toLowerCase().includes(filter.toLowerCase()))
   )
-
-  const columns: ColumnDef<Vendedor>[] = [
-    {
-      accessorKey: "codigo",
-      header: "Código",
-      cell: ({ row }) => <span className="font-semibold text-blue-500">{row.getValue("codigo") || '-'}</span>,
-    },
-    {
-      accessorKey: "nome",
-      header: ({ column }) => {
-        return (
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
-          >
-            Nome
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        )
-      },
-      cell: ({ row }) => <div className="font-medium text-foreground">{row.getValue("nome")}</div>,
-    },
-    {
-      accessorKey: "cpf_cnpj",
-      header: "CPF/CNPJ",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("cpf_cnpj") || '-'}</div>,
-    },
-    {
-      accessorKey: "telefone",
-      header: "Telefone",
-      cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("telefone") || '-'}</div>,
-    },
-    {
-      accessorKey: "comissao_percentual",
-      header: "Comissão (%)",
-      cell: ({ row }) => {
-        const val = parseFloat(row.getValue("comissao_percentual"))
-        return <div className="font-medium">{val.toFixed(2)}%</div>
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string
-        const bgColor = status === 'Ativo' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'
-        return (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${bgColor}`}>
-            {status}
-          </span>
-        )
-      }
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const vendedor = row.original
-        return (
-          <ActionButtons vendedor={vendedor} />
-        )
-      },
-    },
-  ]
 
   const table = useReactTable({
     data: filteredData,
