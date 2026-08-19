@@ -179,13 +179,13 @@ export async function deleteDocumento(id: string, tipo: 'ORCAMENTO' | 'PEDIDO') 
         .eq('pedido_id', id)
         .eq('tenant_id', tenantId)
 
-      if (itens) {
-        for (const item of itens) {
+      if (itens && itens.length > 0) {
+        await Promise.all(itens.map(async (item) => {
           const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
           if (prod) {
             await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) + item.quantidade }).eq('id', item.produto_id)
           }
-        }
+        }))
       }
     }
 
