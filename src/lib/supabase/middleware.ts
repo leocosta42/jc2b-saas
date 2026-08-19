@@ -34,15 +34,18 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname
 
-  // Se o usuário tentar acessar qualquer página que NÃO for /login e ele NÃO estiver logado, redireciona para /login
-  if (!user && path !== '/login') {
+  // Rotas que não exigem login
+  const publicRoutes = ['/login', '/esqueci-senha', '/redefinir-senha']
+
+  // Se o usuário tentar acessar página privada e não estiver logado
+  if (!user && !publicRoutes.includes(path)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Se o usuário JÁ estiver logado e tentar ir para /login, manda pro dashboard (/)
-  if (user && path === '/login') {
+  // Se já estiver logado e tentar ir para login/recuperação
+  if (user && publicRoutes.includes(path)) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
