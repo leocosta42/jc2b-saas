@@ -11,6 +11,46 @@ import {
 } from "@tanstack/react-table"
 import { MoreHorizontal, ArrowUpDown, Search, Edit, Trash2, Copy } from "lucide-react"
 import Link from "next/link"
+import { deleteProduto } from '@/app/actions/produtos'
+
+const ActionCell = ({ row }: { row: any }) => {
+  const [isDeleting, setIsDeleting] = useState(false)
+  const handleDelete = async () => {
+    if (confirm("Tem certeza que deseja excluir este produto?")) {
+      setIsDeleting(true)
+      const res = await deleteProduto(row.original.id)
+      setIsDeleting(false)
+      if (res.error) alert(res.error)
+    }
+  }
+
+  return (
+    <div className="flex justify-end gap-1">
+      <Link 
+        href={`/estoque/novo?copy_id=${row.original.id}`}
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-indigo-500 transition-colors"
+        title="Copiar Produto"
+      >
+        <Copy className="h-4 w-4" />
+      </Link>
+      <Link 
+        href={`/estoque/novo?edit_id=${row.original.id}`}
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+        title="Editar Produto"
+      >
+        <Edit className="h-4 w-4" />
+      </Link>
+      <button 
+        onClick={handleDelete}
+        disabled={isDeleting}
+        title="Excluir Produto"
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
 
 export type Produto = {
   id: string
@@ -112,23 +152,7 @@ export const columns: ColumnDef<Produto>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => (
-      <div className="flex justify-end gap-1">
-        <Link 
-          href={`/estoque/novo?copy_id=${row.original.id}`}
-          className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-indigo-500 transition-colors"
-          title="Copiar Produto"
-        >
-          <Copy className="h-4 w-4" />
-        </Link>
-        <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-          <Edit className="h-4 w-4" />
-        </button>
-        <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors">
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
-    ),
+    cell: ({ row }) => <ActionCell row={row} />,
   },
 ]
 

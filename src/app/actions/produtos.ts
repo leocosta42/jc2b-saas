@@ -56,6 +56,78 @@ export async function createProduto(formData: FormData) {
   }
 }
 
+export async function updateProduto(id: string, formData: FormData) {
+  try {
+    const supabase = await createClient()
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+
+    const tenantId = await getTenantId(supabase, authData.user.id)
+    if (!tenantId) return { error: "Empresa não encontrada." }
+
+    const codigo = formData.get("codigo") as string
+    const descricao = formData.get("descricao") as string
+    const um = formData.get("um") as string
+    const preco_custo = Number(formData.get("preco_custo")) || 0
+    const preco_venda = Number(formData.get("preco_venda")) || 0
+    const quantidade_estoque = Number(formData.get("quantidade_estoque")) || 0
+    const fornecedor_id = formData.get("fornecedor_id") as string
+
+    if (!descricao) return { error: "A descrição é obrigatória." }
+
+    const { error } = await supabase
+      .from('produtos')
+      .update({
+        sku: codigo,
+        nome: descricao,
+        descricao: um,
+        preco_custo,
+        preco_venda,
+        quantidade_estoque,
+        fornecedor_id: fornecedor_id || null
+      })
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+
+    if (error) {
+      console.error("Erro ao atualizar produto:", error)
+      return { error: "Erro no banco de dados: " + error.message }
+    }
+
+    revalidatePath("/estoque")
+    return { success: true }
+  } catch (err: any) {
+    return { error: "Erro inesperado: " + (err.message || String(err)) }
+  }
+}
+
+export async function deleteProduto(id: string) {
+  try {
+    const supabase = await createClient()
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+
+    const tenantId = await getTenantId(supabase, authData.user.id)
+    if (!tenantId) return { error: "Empresa não encontrada." }
+
+    const { error } = await supabase
+      .from('produtos')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+
+    if (error) {
+      console.error("Erro ao deletar produto:", error)
+      return { error: "Erro no banco de dados: " + error.message }
+    }
+
+    revalidatePath("/estoque")
+    return { success: true }
+  } catch (err: any) {
+    return { error: "Erro inesperado: " + (err.message || String(err)) }
+  }
+}
+
 export async function getFornecedoresList() {
   const supabase = await createClient()
   const { data: authData } = await supabase.auth.getUser()

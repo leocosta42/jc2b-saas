@@ -4,21 +4,25 @@ import { Save, ArrowLeft, Package, Box, DollarSign, Loader2 } from 'lucide-react
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { createProduto } from '@/app/actions/produtos'
+import { createProduto, updateProduto } from '@/app/actions/produtos'
 
 export function ProdutoForm({ 
   fornecedores, 
   nextSku,
-  produtoCopiar 
+  produtoCopiar,
+  isEdit,
+  editId
 }: { 
   fornecedores: any[], 
   nextSku: string,
-  produtoCopiar?: any
+  produtoCopiar?: any,
+  isEdit?: boolean,
+  editId?: string | null
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const [codigo, setCodigo] = useState(nextSku)
+  const [codigo, setCodigo] = useState(isEdit ? (produtoCopiar?.sku || nextSku) : (produtoCopiar ? nextSku : nextSku))
   const [custo, setCusto] = useState(produtoCopiar?.preco_custo || 0)
   const [venda, setVenda] = useState(produtoCopiar?.preco_venda || 0)
 
@@ -29,7 +33,13 @@ export function ProdutoForm({
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     startTransition(async () => {
-      const res = await createProduto(formData)
+      let res
+      if (isEdit && editId) {
+        res = await updateProduto(editId, formData)
+      } else {
+        res = await createProduto(formData)
+      }
+      
       if (res.error) {
         alert(res.error)
       } else {
