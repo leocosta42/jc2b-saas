@@ -5,7 +5,12 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
   const { id } = await params
   const res = await getDocumentoCompleto(id)
   
-  if (res.error || !res.data) return notFound()
+  if (res.error) {
+    return <div className="p-8 text-red-500 font-bold">Erro ao buscar pedido: {res.error}</div>
+  }
+  if (!res.data) {
+    return <div className="p-8 text-red-500 font-bold">Pedido não encontrado no banco de dados.</div>
+  }
 
   const doc = res.data
   const cliente: any = Array.isArray(doc.clientes) ? doc.clientes[0] : (doc.clientes || {})
