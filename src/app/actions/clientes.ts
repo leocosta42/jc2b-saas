@@ -40,7 +40,7 @@ export async function createCliente(formData: FormData) {
         .select('id, nome')
         .eq('tenant_id', tenantId)
         .eq('cpf_cnpj', documento)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         return { error: `CPF/CNPJ já cadastrado para o cliente: "${existing.nome}"` }
@@ -105,7 +105,7 @@ export async function updateCliente(id: string, formData: FormData) {
         .eq('tenant_id', tenantId)
         .eq('cpf_cnpj', documento)
         .neq('id', id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         return { error: `CPF/CNPJ já cadastrado para o cliente: "${existing.nome}"` }

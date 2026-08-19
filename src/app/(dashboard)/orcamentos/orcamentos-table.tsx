@@ -12,6 +12,7 @@ import {
 import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2, Printer, Trash2 } from "lucide-react"
 import { convertToPedido, deleteDocumento } from "@/app/actions/vendas"
 import Link from "next/link"
+import { toast } from "sonner"
 
 export type Pedido = {
   id: string
@@ -39,7 +40,11 @@ const ActionCell = ({ row }: { row: any }) => {
     setIsPending(true)
     const res = await convertToPedido(p.id)
     setIsPending(false)
-    if (res.error) alert(res.error)
+    if (res.error) {
+      toast.error("Erro ao aprovar", { description: res.error })
+    } else {
+      toast.success("Orçamento aprovado! Pedido gerado com sucesso.")
+    }
   }
 
   const handleDelete = async () => {
@@ -48,7 +53,11 @@ const ActionCell = ({ row }: { row: any }) => {
     setIsPending(true)
     const res = await deleteDocumento(p.id, p.tipo as 'ORCAMENTO' | 'PEDIDO')
     setIsPending(false)
-    if(res.error) alert(res.error)
+    if (res.error) {
+      toast.error("Erro ao excluir", { description: res.error })
+    } else {
+      toast.success(`${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'} excluído com sucesso.`)
+    }
   }
 
   return (

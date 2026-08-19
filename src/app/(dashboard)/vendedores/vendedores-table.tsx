@@ -12,6 +12,7 @@ import {
 import { ArrowUpDown, Search, Edit, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { deleteVendedor } from "@/app/actions/vendedores"
+import { toast } from "sonner"
 
 export type Vendedor = {
   id: string
@@ -184,7 +185,11 @@ function ActionButtons({ vendedor }: { vendedor: Vendedor }) {
     setIsPending(true)
     const res = await deleteVendedor(vendedor.id)
     setIsPending(false)
-    if (res.error) alert("Erro ao excluir: " + res.error)
+    if (res.error) {
+      toast.error("Erro ao excluir", { description: res.error })
+    } else {
+      toast.success(`Vendedor "${vendedor.nome}" excluído com sucesso.`)
+    }
   }
 
   return (

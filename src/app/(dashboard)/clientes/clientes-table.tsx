@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useMemo } from "react"
 import {
   ColumnDef,
@@ -9,9 +8,10 @@ import {
   getSortedRowModel,
   SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search, Edit, Trash2, Users } from "lucide-react"
+import { ArrowUpDown, Search, Edit, Trash2, Users, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { deleteCliente } from "@/app/actions/clientes"
+import { toast } from "sonner"
 
 export type Cliente = {
   id: string
@@ -175,7 +175,11 @@ function ActionButtons({ cliente }: { cliente: Cliente }) {
     setIsPending(true)
     const res = await deleteCliente(cliente.id)
     setIsPending(false)
-    if (res.error) alert("Erro ao excluir: " + res.error)
+    if (res.error) {
+      toast.error("Erro ao excluir", { description: res.error })
+    } else {
+      toast.success(`Cliente "${cliente.nome}" excluído com sucesso.`)
+    }
   }
 
   return (

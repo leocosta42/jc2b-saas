@@ -12,6 +12,7 @@ import {
 import { ArrowUpDown, Search, Edit, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { deleteFornecedor } from "@/app/actions/fornecedores"
+import { toast } from "sonner"
 
 export type Fornecedor = {
   id: string
@@ -166,7 +167,11 @@ function ActionButtons({ fornecedor }: { fornecedor: Fornecedor }) {
     setIsPending(true)
     const res = await deleteFornecedor(fornecedor.id)
     setIsPending(false)
-    if (res.error) alert("Erro ao excluir: " + res.error)
+    if (res.error) {
+      toast.error("Erro ao excluir", { description: res.error })
+    } else {
+      toast.success(`Fornecedor "${fornecedor.nome}" excluído com sucesso.`)
+    }
   }
 
   return (

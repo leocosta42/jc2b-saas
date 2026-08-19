@@ -12,6 +12,7 @@ import {
 import { MoreHorizontal, ArrowUpDown, Search, Edit, Trash2, Copy } from "lucide-react"
 import Link from "next/link"
 import { deleteProduto } from '@/app/actions/produtos'
+import { toast } from "sonner"
 
 const ActionCell = ({ row }: { row: any }) => {
   const [isDeleting, setIsDeleting] = useState(false)
@@ -20,7 +21,11 @@ const ActionCell = ({ row }: { row: any }) => {
       setIsDeleting(true)
       const res = await deleteProduto(row.original.id)
       setIsDeleting(false)
-      if (res.error) alert(res.error)
+      if (res.error) {
+        toast.error("Erro ao excluir produto", { description: res.error })
+      } else {
+        toast.success(`Produto "${row.original.descricao}" excluído com sucesso.`)
+      }
     }
   }
 

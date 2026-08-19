@@ -41,7 +41,7 @@ export async function createFornecedor(formData: FormData) {
         .select('id, nome')
         .eq('tenant_id', tenantId)
         .eq('cnpj_cpf', documento)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         return { error: `CNPJ/CPF já cadastrado para o fornecedor: "${existing.nome}"` }
@@ -108,7 +108,7 @@ export async function updateFornecedor(id: string, formData: FormData) {
         .eq('tenant_id', tenantId)
         .eq('cnpj_cpf', documento)
         .neq('id', id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         return { error: `CNPJ/CPF já cadastrado para o fornecedor: "${existing.nome}"` }

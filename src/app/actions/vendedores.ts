@@ -71,7 +71,7 @@ export async function createVendedor(formData: FormData) {
         .select('id')
         .eq('tenant_id', profile.tenant_id)
         .eq('cpf_cnpj', documento)
-        .single()
+        .maybeSingle()
         
       if (existingDoc) {
         return { error: "Este CPF/CNPJ já está cadastrado para outro vendedor." }
@@ -155,7 +155,7 @@ export async function updateVendedor(id: string, formData: FormData) {
         .eq('tenant_id', profile.tenant_id)
         .eq('cpf_cnpj', documento)
         .neq('id', id)
-        .single()
+        .maybeSingle()
       if (existingDoc) return { error: "Este CPF/CNPJ já está cadastrado para outro vendedor." }
     }
 
