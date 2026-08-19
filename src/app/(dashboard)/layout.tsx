@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { LayoutDashboard, FileSpreadsheet, Briefcase, Contact, Truck, Boxes, LineChart, SlidersHorizontal } from 'lucide-react'
 import { LogoutButton } from './components/logout-button'
 
+import { MobileNav } from './components/mobile-nav'
+
 export default function DashboardLayout({
   children,
 }: {
@@ -58,7 +60,11 @@ export default function DashboardLayout({
       <main className="flex-1 overflow-y-auto">
         {/* Mobile Header */}
         <header className="flex h-14 items-center gap-4 border-b bg-muted/20 px-4 md:hidden">
+          <MobileNav />
           <span className="font-bold">JC2B</span>
+          <div className="ml-auto">
+            {/* Opcional: botão extra no header mobile se precisar */}
+          </div>
         </header>
         {children}
       </main>

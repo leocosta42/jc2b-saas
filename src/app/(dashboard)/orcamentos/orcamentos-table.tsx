@@ -226,7 +226,7 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-x-auto">
+      <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-x-auto hidden md:block">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/30">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -262,6 +262,51 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Visão de Cartões para Celular (Mobile View) */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => {
+            const p = row.original;
+            const amount = parseFloat(p.valor_total?.toString() || "0")
+            const formattedValor = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amount)
+            const tipoColor = p.tipo === 'PEDIDO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+
+            return (
+              <div key={row.id} className="flex flex-col gap-3 rounded-xl border border-border/50 bg-card p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold text-indigo-500">#{p.numero}</span>
+                    <span className="font-medium text-foreground line-clamp-1">{p.cliente}</span>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${tipoColor}`}>
+                    {p.tipo}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex flex-col">
+                    <span className="text-xs uppercase opacity-70">Emissão</span>
+                    <span>{p.data_emissao}</span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs uppercase opacity-70">Valor Total</span>
+                    <span className="font-medium text-foreground">{formattedValor}</span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t mt-1">
+                  <ActionCell row={row} />
+                </div>
+              </div>
+            )
+          })
+        ) : (
+          <div className="text-center p-8 text-muted-foreground border rounded-xl bg-card/50">
+            Nenhum pedido encontrado.
+          </div>
+        )}
       </div>
       <div className="text-sm text-muted-foreground pl-1">
         Mostrando {table.getRowModel().rows.length} de {data.length} registros.
