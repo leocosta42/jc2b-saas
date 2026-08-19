@@ -90,15 +90,20 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
         </form>
 
-        <div className="text-center text-sm">
+        <div className="text-center text-sm space-y-4">
           {isRegister ? (
-            <Link href="/login" className="font-medium text-primary hover:text-primary/80">
+            <Link href="/login" className="font-medium text-primary hover:text-primary/80 block">
               Já possui uma conta? Faça login
             </Link>
           ) : (
-            <Link href="/login?mode=register" className="font-medium text-primary hover:text-primary/80">
-              Cadastrar acesso de um novo vendedor
-            </Link>
+            <>
+              <Link href="/esqueci-senha" className="font-medium text-muted-foreground hover:text-primary block">
+                Esqueci minha senha
+              </Link>
+              <Link href="/login?mode=register" className="font-medium text-primary hover:text-primary/80 block">
+                Cadastrar acesso de um novo vendedor
+              </Link>
+            </>
           )}
         </div>
       </div>
