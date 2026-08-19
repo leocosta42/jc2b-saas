@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { 
   Users, UserPlus, Contact,
@@ -110,14 +111,14 @@ export default async function DashboardPage() {
 
       {/* Hero Section */}
       <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8">
-        <div className="space-y-2 relative z-10">
+        <div className="space-y-4 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase mb-2 border border-primary/20">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Workspace Ativo</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
-            JC2B <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">PARTS</span>
-          </h1>
+          <div className="py-2">
+            <Image src="/logo.png" alt="JC2B Parts" width={280} height={90} className="object-contain" priority />
+          </div>
           <p className="text-muted-foreground text-lg max-w-xl leading-relaxed">
             Gestão integrada de ponta a ponta. Acompanhe suas vendas, controle seu estoque e expanda seus resultados.
           </p>
