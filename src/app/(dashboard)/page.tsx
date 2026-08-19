@@ -1,129 +1,165 @@
 import Link from 'next/link'
-import { Users, UserCircle, Truck, FileText, ShoppingCart, Package, Settings, BarChart3, Plus, List, ArrowRight } from 'lucide-react'
+import { 
+  Users, UserPlus, Contact,
+  Briefcase, Truck, Factory,
+  FileSpreadsheet, Calculator,
+  ShoppingBag, Receipt,
+  Boxes, PackagePlus, ArrowRightLeft,
+  LineChart, PieChart,
+  SlidersHorizontal, Cog,
+  ArrowRight, Sparkles
+} from 'lucide-react'
 
-// Estrutura de dados espelhando os botões do VBA da imagem
 const modules = [
   {
     title: "Vendedores",
-    icon: <UserCircle className="h-6 w-6 text-blue-500" />,
-    color: "bg-blue-500/5 border-blue-500/20",
+    description: "Gestão da equipe de vendas",
+    icon: <Briefcase className="h-6 w-6 text-blue-500" />,
+    bgLight: "bg-blue-500/10",
+    borderGlow: "group-hover:border-blue-500/30",
     links: [
-      { label: "Cadastrar vendedor", href: "/vendedores/novo", icon: <Plus className="h-4 w-4" /> },
-      { label: "Vendedores", href: "/vendedores", icon: <List className="h-4 w-4" /> },
+      { label: "Cadastrar Vendedor", href: "/vendedores/novo", icon: <UserPlus className="h-4 w-4" /> },
+      { label: "Equipe de Vendas", href: "/vendedores", icon: <Users className="h-4 w-4" /> },
     ]
   },
   {
     title: "Clientes",
-    icon: <Users className="h-6 w-6 text-emerald-500" />,
-    color: "bg-emerald-500/5 border-emerald-500/20",
+    description: "Carteira e relacionamento",
+    icon: <Contact className="h-6 w-6 text-emerald-500" />,
+    bgLight: "bg-emerald-500/10",
+    borderGlow: "group-hover:border-emerald-500/30",
     links: [
-      { label: "Cadastrar cliente", href: "/clientes/novo", icon: <Plus className="h-4 w-4" /> },
-      { label: "Clientes", href: "/clientes", icon: <List className="h-4 w-4" /> },
+      { label: "Novo Cliente", href: "/clientes/novo", icon: <UserPlus className="h-4 w-4" /> },
+      { label: "Listar Clientes", href: "/clientes", icon: <Users className="h-4 w-4" /> },
     ]
   },
   {
     title: "Fornecedores",
+    description: "Gestão de suprimentos",
     icon: <Truck className="h-6 w-6 text-orange-500" />,
-    color: "bg-orange-500/5 border-orange-500/20",
+    bgLight: "bg-orange-500/10",
+    borderGlow: "group-hover:border-orange-500/30",
     links: [
-      { label: "Cadastrar fornecedor", href: "/fornecedores/novo", icon: <Plus className="h-4 w-4" /> },
-      { label: "Fornecedores", href: "/fornecedores", icon: <List className="h-4 w-4" /> },
+      { label: "Novo Fornecedor", href: "/fornecedores/novo", icon: <Factory className="h-4 w-4" /> },
+      { label: "Listar Fornecedores", href: "/fornecedores", icon: <Users className="h-4 w-4" /> },
     ]
   },
   {
     title: "Orçamentos",
-    icon: <FileText className="h-6 w-6 text-purple-500" />,
-    color: "bg-purple-500/5 border-purple-500/20",
+    description: "Propostas comerciais",
+    icon: <FileSpreadsheet className="h-6 w-6 text-purple-500" />,
+    bgLight: "bg-purple-500/10",
+    borderGlow: "group-hover:border-purple-500/30",
     links: [
-      { label: "Emitir orçamento", href: "/orcamentos/novo", icon: <Plus className="h-4 w-4" /> },
-      { label: "Resumo de orçamentos", href: "/orcamentos", icon: <List className="h-4 w-4" /> },
+      { label: "Novo Orçamento", href: "/orcamentos/novo", icon: <Calculator className="h-4 w-4" /> },
+      { label: "Histórico de Orçamentos", href: "/orcamentos", icon: <Receipt className="h-4 w-4" /> },
     ]
   },
   {
     title: "Pedidos",
-    icon: <ShoppingCart className="h-6 w-6 text-rose-500" />,
-    color: "bg-rose-500/5 border-rose-500/20",
+    description: "Faturamento e conversão",
+    icon: <ShoppingBag className="h-6 w-6 text-rose-500" />,
+    bgLight: "bg-rose-500/10",
+    borderGlow: "group-hover:border-rose-500/30",
     links: [
-      { label: "Emitir pedido", href: "/pedidos/novo", icon: <Plus className="h-4 w-4" /> },
-      { label: "Resumo de pedidos", href: "/pedidos", icon: <List className="h-4 w-4" /> },
+      { label: "Emitir Pedido", href: "/pedidos/novo", icon: <PackagePlus className="h-4 w-4" /> },
+      { label: "Central de Pedidos", href: "/pedidos", icon: <Receipt className="h-4 w-4" /> },
     ]
   },
   {
-    title: "Produtos",
-    icon: <Package className="h-6 w-6 text-indigo-500" />,
-    color: "bg-indigo-500/5 border-indigo-500/20",
+    title: "Estoque",
+    description: "Produtos e movimentações",
+    icon: <Boxes className="h-6 w-6 text-indigo-500" />,
+    bgLight: "bg-indigo-500/10",
+    borderGlow: "group-hover:border-indigo-500/30",
     links: [
-      { label: "Cadastrar produto", href: "/estoque/novo", icon: <Plus className="h-4 w-4" /> },
-      { label: "Incluir Saldo (Entrada)", href: "/estoque/entrada", icon: <Plus className="h-4 w-4" /> },
-      { label: "Produtos / Estoque", href: "/estoque", icon: <List className="h-4 w-4" /> },
+      { label: "Cadastrar Produto", href: "/estoque/novo", icon: <PackagePlus className="h-4 w-4" /> },
+      { label: "Entrada de Saldo", href: "/estoque/entrada", icon: <ArrowRightLeft className="h-4 w-4" /> },
+      { label: "Inventário", href: "/estoque", icon: <Boxes className="h-4 w-4" /> },
     ]
   },
   {
     title: "Estatísticas",
-    icon: <BarChart3 className="h-6 w-6 text-amber-500" />,
-    color: "bg-amber-500/5 border-amber-500/20",
+    description: "Visão estratégica do negócio",
+    icon: <LineChart className="h-6 w-6 text-amber-500" />,
+    bgLight: "bg-amber-500/10",
+    borderGlow: "group-hover:border-amber-500/30",
     links: [
-      { label: "Dados estatísticos", href: "/estatisticas", icon: <BarChart3 className="h-4 w-4" /> },
-      { label: "Dashboard", href: "/dashboard", icon: <List className="h-4 w-4" /> },
+      { label: "Painel de Dados", href: "/estatisticas", icon: <PieChart className="h-4 w-4" /> },
     ]
   },
   {
     title: "Configurações",
-    icon: <Settings className="h-6 w-6 text-slate-500" />,
-    color: "bg-slate-500/5 border-slate-500/20",
+    description: "Ajustes e preferências",
+    icon: <SlidersHorizontal className="h-6 w-6 text-slate-500" />,
+    bgLight: "bg-slate-500/10",
+    borderGlow: "group-hover:border-slate-500/30",
     links: [
-      { label: "Ajustes do Sistema", href: "/configuracoes", icon: <Settings className="h-4 w-4" /> },
+      { label: "Ajustes Gerais", href: "/configuracoes", icon: <Cog className="h-4 w-4" /> },
     ]
   }
 ]
 
 export default async function DashboardPage() {
   return (
-    <div className="flex-1 space-y-8 p-6 md:p-10 min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-muted/30 via-background to-background">
+    <div className="flex-1 space-y-8 p-6 md:p-10 min-h-[calc(100vh-3.5rem)] md:min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background relative overflow-hidden">
       
-      {/* Header com Logo JC2B PARTS */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/50">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter bg-gradient-to-br from-primary via-primary to-primary/50 bg-clip-text text-transparent">
-            JC2B PARTS
+      {/* Decoração de Fundo */}
+      <div className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl opacity-50 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 rounded-full bg-blue-500/5 blur-3xl opacity-50 pointer-events-none" />
+
+      {/* Hero Section */}
+      <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8">
+        <div className="space-y-2 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase mb-2 border border-primary/20">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Workspace Ativo</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
+            JC2B <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">PARTS</span>
           </h1>
-          <p className="text-muted-foreground mt-2 font-medium tracking-wide text-sm uppercase">
-            Sistema de Controle de Vendas Full V2 Plus (SaaS)
+          <p className="text-muted-foreground text-lg max-w-xl leading-relaxed">
+            Gestão integrada de ponta a ponta. Acompanhe suas vendas, controle seu estoque e expanda seus resultados.
           </p>
         </div>
       </div>
 
-      {/* Grid de Módulos (Replicando e modernizando a interface antiga) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Grid de Módulos (Design Premium SaaS) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 relative z-10">
         {modules.map((mod, i) => (
           <div 
             key={i} 
-            className="flex flex-col rounded-2xl border border-border/50 bg-card/60 backdrop-blur-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group"
+            className={`group flex flex-col rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden ${mod.borderGlow}`}
           >
             {/* Header do Card */}
-            <div className={`p-5 border-b border-border/50 flex items-center gap-3 ${mod.color} transition-colors group-hover:bg-opacity-20`}>
-              <div className="p-2 bg-background/80 backdrop-blur-sm rounded-xl shadow-sm border border-border/50">
+            <div className="p-5 flex items-start gap-4">
+              <div className={`p-3 rounded-xl shadow-inner border border-white/10 dark:border-white/5 ${mod.bgLight} transition-colors duration-300`}>
                 {mod.icon}
               </div>
-              <h2 className="font-bold text-lg tracking-tight">{mod.title}</h2>
+              <div className="pt-1.5">
+                <h2 className="font-semibold text-lg tracking-tight text-foreground group-hover:text-primary transition-colors">{mod.title}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{mod.description}</p>
+              </div>
             </div>
             
-            {/* Lista de Botões/Links (Substituindo os botões brancos do VBA) */}
-            <div className="p-3 flex-1 bg-background/40">
-              <ul className="space-y-1.5">
+            {/* Ações / Links */}
+            <div className="px-3 pb-3 pt-1 flex-1 flex flex-col justify-end">
+              <ul className="space-y-1">
                 {mod.links.map((link, j) => (
                   <li key={j}>
                     <Link 
                       href={link.href}
-                      className="group/link flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:shadow-sm border border-transparent hover:border-border/50 transition-all"
+                      className="group/link flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/80 shadow-sm border border-transparent hover:border-border/60 transition-all duration-200"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-muted-foreground/70 group-hover/link:text-primary transition-colors">
+                        <span className="text-muted-foreground/60 group-hover/link:text-primary transition-colors duration-200">
                           {link.icon}
                         </span>
                         {link.label}
                       </div>
-                      <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all text-primary" />
+                      <div className="bg-background/50 p-1 rounded-md opacity-0 -translate-x-2 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-200 shadow-sm">
+                        <ArrowRight className="h-3.5 w-3.5 text-primary" />
+                      </div>
                     </Link>
                   </li>
                 ))}
