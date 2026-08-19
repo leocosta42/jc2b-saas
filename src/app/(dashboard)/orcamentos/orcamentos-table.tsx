@@ -60,19 +60,45 @@ const ActionCell = ({ row }: { row: any }) => {
     }
   }
 
+  const handleWhatsApp = () => {
+    const url = `${window.location.origin}/imprimir/${p.id}`
+    const text = `Olá! Segue o link do seu ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'} nº ${p.numero}:\n\n${url}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+  }
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/imprimir/${p.id}`
+    navigator.clipboard.writeText(url)
+    toast.success("Link copiado para a área de transferência!")
+  }
+
   return (
-    <div className="flex justify-end gap-2">
+    <div className="flex justify-end gap-1.5">
       {p.tipo === 'ORCAMENTO' && (
         <button 
           onClick={handleAprovar}
           disabled={isPending}
-          title="Aprovar Orçamento e Gerar Pedido"
+          title="Aprovar Orçamento"
           className="h-8 flex items-center gap-1 px-2 rounded-md bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50"
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          <span className="text-xs font-semibold hidden lg:inline">Aprovar</span>
+          <span className="text-xs font-semibold hidden xl:inline">Aprovar</span>
         </button>
       )}
+      <button 
+        onClick={handleWhatsApp}
+        title="Enviar por WhatsApp"
+        className="h-8 w-8 flex items-center justify-center rounded-md bg-green-500/10 text-green-600 hover:bg-green-500 hover:text-white transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+      </button>
+      <button 
+        onClick={handleCopyLink}
+        title="Copiar Link Público"
+        className="h-8 w-8 flex items-center justify-center rounded-md bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+      </button>
       <a 
         href={`/imprimir/${p.id}`}
         target="_blank"
