@@ -24,7 +24,7 @@ export default async function OrcamentosPage() {
             data_emissao,
             data_entrega,
             status,
-            clientes (nome),
+            clientes (nome, celular),
             itens_pedido (quantidade, preco_unitario, desconto_percentual)
           `)
           .eq('tenant_id', profile.tenant_id)
@@ -51,7 +51,8 @@ export default async function OrcamentosPage() {
               vendedor: "",
               comissao: "0%",
               comissao_venda: 0,
-              mes: ""
+              mes: "",
+              celular: d.clientes?.celular || ""
             }
           })
         }

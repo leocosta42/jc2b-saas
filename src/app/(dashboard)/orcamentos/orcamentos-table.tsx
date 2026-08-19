@@ -28,6 +28,7 @@ export type Pedido = {
   comissao: string
   comissao_venda: number
   mes: string
+  celular?: string
 }
 
 const ActionCell = ({ row }: { row: any }) => {
@@ -63,7 +64,16 @@ const ActionCell = ({ row }: { row: any }) => {
   const handleWhatsApp = () => {
     const url = `${window.location.origin}/imprimir/${p.id}`
     const text = `Olá! Segue o link do seu ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'} nº ${p.numero}:\n\n${url}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+    
+    // Tenta limpar o celular de símbolos
+    let num = p.celular?.replace(/\D/g, '') || ''
+    // Se o número tiver DDD (11 ou 10 dígitos) e não tiver código do país, colocar o 55
+    if (num && num.length >= 10 && !num.startsWith('55')) {
+      num = '55' + num
+    }
+
+    const waUrl = num ? `https://wa.me/${num}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(waUrl, '_blank')
   }
 
   const handleCopyLink = () => {
