@@ -9,9 +9,10 @@ import {
   getSortedRowModel,
   SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2, Printer } from "lucide-react"
+import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2, Printer, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { convertToPedido } from "@/app/actions/vendas"
+import { convertToPedido, deleteDocumento } from "@/app/actions/vendas"
+import Link from "next/link"
 
 export type Pedido = {
   id: string
@@ -123,11 +124,28 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
             >
               <Printer className="h-4 w-4" />
             </a>
-            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-              <Download className="h-4 w-4" />
-            </button>
-            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+            <Link 
+              href={`/${p.tipo === 'ORCAMENTO' ? 'orcamentos' : 'pedidos'}/novo?edit_id=${p.id}`}
+              className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+              title="Editar"
+            >
               <Edit className="h-4 w-4" />
+            </Link>
+            <button 
+              onClick={async () => {
+                if(confirm(`Tem certeza que deseja excluir este ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}?`)) {
+                  startTransition(async () => {
+                    const res = await deleteDocumento(p.id, p.tipo as 'ORCAMENTO' | 'PEDIDO')
+                    if(res.error) alert(res.error)
+                    else router.refresh()
+                  })
+                }
+              }}
+              disabled={isPending}
+              className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
+              title="Excluir"
+            >
+              <Trash2 className="h-4 w-4" />
             </button>
           </div>
         )

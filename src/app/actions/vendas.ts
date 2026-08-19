@@ -161,3 +161,142 @@ export async function convertToPedido(id: string) {
     return { error: "Erro: " + err.message }
   }
 }
+
+export async function deleteDocumento(id: string, tipo: 'ORCAMENTO' | 'PEDIDO') {
+  try {
+    const supabase = await createClient()
+    const { data: authData } = await supabase.auth.getUser()
+    if (!authData?.user) return { error: "Não autenticado" }
+
+    const tenantId = await getTenantId(supabase, authData.user.id)
+    if (!tenantId) return { error: "Empresa não encontrada" }
+
+    // Se for PEDIDO, precisa devolver o estoque antes de apagar
+    if (tipo === 'PEDIDO') {
+      const { data: itens } = await supabase
+        .from('itens_pedido')
+        .select('produto_id, quantidade')
+        .eq('pedido_id', id)
+        .eq('tenant_id', tenantId)
+
+      if (itens) {
+        for (const item of itens) {
+          const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
+          if (prod) {
+            await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) + item.quantidade }).eq('id', item.produto_id)
+          }
+        }
+      }
+    }
+
+    const { error } = await supabase
+      .from('pedidos')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+
+    if (error) return { error: error.message }
+
+    revalidatePath("/orcamentos")
+    revalidatePath("/pedidos")
+    return { success: true }
+  } catch (err: any) {
+    return { error: "Erro: " + err.message }
+  }
+}
+
+export async function getPedidoCompletoById(id: string) {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return null
+
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return null
+
+  const { data: pedido } = await supabase
+    .from('pedidos')
+    .select(`
+      id, tipo, cliente_id, vendedor_id, data_emissao, data_entrega, forma_pagamento, observacoes, status,
+      itens_pedido (
+        id, produto_id, quantidade, preco_unitario, desconto_percentual, unidade_medida,
+        produtos ( sku, nome )
+      )
+    `)
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+    .single()
+
+  return pedido
+}
+
+export async function updateDocumento(id: string, data: any) {
+  try {
+    const supabase = await createClient()
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+
+    const tenantId = await getTenantId(supabase, authData.user.id)
+    if (!tenantId) return { error: "Empresa não encontrada." }
+
+    // 1. Fetch old items to revert stock if PEDIDO
+    if (data.tipo === 'PEDIDO') {
+      const { data: oldItens } = await supabase.from('itens_pedido').select('produto_id, quantidade').eq('pedido_id', id)
+      if (oldItens) {
+        for (const item of oldItens) {
+          const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
+          if (prod) {
+            await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) + item.quantidade }).eq('id', item.produto_id)
+          }
+        }
+      }
+    }
+
+    // 2. Delete old items
+    await supabase.from('itens_pedido').delete().eq('pedido_id', id)
+
+    // 3. Update pedido
+    const { error: pedidoError } = await supabase
+      .from('pedidos')
+      .update({
+        cliente_id: data.cliente_id,
+        vendedor_id: data.vendedor_id || null,
+        data_emissao: data.data_emissao,
+        data_entrega: data.data_entrega || null,
+        forma_pagamento: data.forma_pagamento,
+        observacoes: data.observacoes
+      })
+      .eq('id', id)
+
+    if (pedidoError) return { error: "Erro ao atualizar documento: " + pedidoError.message }
+
+    // 4. Insert new items
+    const itensToInsert = data.itens.map((item: any) => ({
+      tenant_id: tenantId,
+      pedido_id: id,
+      produto_id: item.produto_id,
+      quantidade: item.quantidade,
+      preco_unitario: item.preco_unitario,
+      desconto_percentual: item.desconto_percentual,
+      unidade_medida: item.unidade_medida
+    }))
+
+    const { error: itensError } = await supabase.from('itens_pedido').insert(itensToInsert)
+    if (itensError) return { error: "Erro ao inserir itens: " + itensError.message }
+
+    // 5. If PEDIDO, reduce stock based on new items
+    if (data.tipo === 'PEDIDO') {
+      for (const item of data.itens) {
+        const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
+        if (prod) {
+          await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) - item.quantidade }).eq('id', item.produto_id)
+        }
+      }
+    }
+
+    revalidatePath(data.tipo === 'ORCAMENTO' ? "/orcamentos" : "/pedidos")
+    return { success: true, id }
+  } catch (err: any) {
+    return { error: "Erro inesperado: " + (err.message || String(err)) }
+  }
+}
+

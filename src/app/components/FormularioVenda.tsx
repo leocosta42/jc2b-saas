@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createDocumento } from "@/app/actions/vendas"
+import { createDocumento, updateDocumento } from "@/app/actions/vendas"
 import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2, Search } from "lucide-react"
 import Link from "next/link"
 
@@ -13,26 +13,46 @@ interface Props {
     vendedores: any[]
     produtos: any[]
   }
+  isEdit?: boolean
+  pedidoEdit?: any
 }
 
-export function FormularioVenda({ tipo, dadosForm }: Props) {
+export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   // Header
-  const [dataEmissao, setDataEmissao] = useState(new Date().toISOString().split('T')[0])
-  const [dataEntrega, setDataEntrega] = useState("")
+  const [dataEmissao, setDataEmissao] = useState(
+    pedidoEdit?.data_emissao ? new Date(pedidoEdit.data_emissao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  )
+  const [dataEntrega, setDataEntrega] = useState(
+    pedidoEdit?.data_entrega ? new Date(pedidoEdit.data_entrega).toISOString().split('T')[0] : ""
+  )
   
   // Entities
-  const [clienteId, setClienteId] = useState("")
-  const [vendedorId, setVendedorId] = useState("")
+  const [clienteId, setClienteId] = useState(pedidoEdit?.cliente_id || "")
+  const [vendedorId, setVendedorId] = useState(pedidoEdit?.vendedor_id || "")
   
   // Totals & Footers
-  const [formaPagamento, setFormaPagamento] = useState("")
-  const [observacoes, setObservacoes] = useState("")
+  const [formaPagamento, setFormaPagamento] = useState(pedidoEdit?.forma_pagamento || "")
+  const [observacoes, setObservacoes] = useState(pedidoEdit?.observacoes || "")
 
   // Itens
-  const [itens, setItens] = useState([{ id: Date.now(), produto_id: "", produto_sku: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }])
+  const [itens, setItens] = useState(() => {
+    if (pedidoEdit?.itens_pedido && pedidoEdit.itens_pedido.length > 0) {
+      return pedidoEdit.itens_pedido.map((ip: any) => ({
+        id: ip.id || Date.now() + Math.random(),
+        produto_id: ip.produto_id,
+        produto_sku: ip.produtos?.sku || "",
+        produto_nome: ip.produtos?.nome || "",
+        quantidade: ip.quantidade,
+        unidade_medida: ip.unidade_medida || "UN",
+        preco_unitario: ip.preco_unitario,
+        desconto_percentual: ip.desconto_percentual || 0
+      }))
+    }
+    return [{ id: Date.now(), produto_id: "", produto_sku: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }]
+  })
   const [modalProdutoOpen, setModalProdutoOpen] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null})
   const [buscaModal, setBuscaModal] = useState("")
 
@@ -83,7 +103,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
     if (itens.some(i => !i.produto_id)) return alert("Selecione os produtos para todos os itens")
 
     startTransition(async () => {
-      const res = await createDocumento({
+      const docData = {
         tipo,
         cliente_id: clienteId,
         vendedor_id: vendedorId,
@@ -98,7 +118,14 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
           desconto_percentual: Number(i.desconto_percentual),
           unidade_medida: i.unidade_medida
         }))
-      })
+      }
+
+      let res;
+      if (isEdit && pedidoEdit) {
+        res = await updateDocumento(pedidoEdit.id, docData)
+      } else {
+        res = await createDocumento(docData)
+      }
 
       if (res.error) {
         alert(res.error)
@@ -111,7 +138,7 @@ export function FormularioVenda({ tipo, dadosForm }: Props) {
 
   const corTema = tipo === 'ORCAMENTO' ? 'text-blue-500' : 'text-emerald-500'
   const bgTema = tipo === 'ORCAMENTO' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
-  const title = tipo === 'ORCAMENTO' ? 'Novo Orçamento' : 'Novo Pedido de Venda'
+  const title = isEdit ? `Editar ${tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}` : `Novo ${tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido de Venda'}`
   const backLink = tipo === 'ORCAMENTO' ? '/orcamentos' : '/pedidos'
 
   return (
