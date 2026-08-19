@@ -103,54 +103,50 @@ const modules = [
 
 export default async function DashboardPage() {
   return (
-    <div className="flex-1 space-y-8 p-6 md:p-10 min-h-[calc(100vh-3.5rem)] md:min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background relative">
+    <div className="flex-1 flex flex-col p-4 md:p-6 h-[calc(100vh-3.5rem)] md:h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background relative">
       
       {/* Decoração de Fundo */}
       <div className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl opacity-50 pointer-events-none" />
       <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 rounded-full bg-blue-500/5 blur-3xl opacity-50 pointer-events-none" />
 
       {/* Hero Section */}
-      <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8">
-        <div className="space-y-4 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase mb-2 border border-primary/20">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Workspace Ativo</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
+      <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4">
+        <div className="space-y-1 relative z-10">
+          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground">
             JC2B <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">PARTS</span>
           </h1>
-          <p className="text-muted-foreground text-lg max-w-xl leading-relaxed">
+          <p className="text-muted-foreground text-sm max-w-xl leading-relaxed">
             Gestão integrada de ponta a ponta. Acompanhe suas vendas, controle seu estoque e expanda seus resultados.
           </p>
         </div>
       </div>
 
       {/* Grid de Módulos (Design Premium SaaS) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 relative z-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative z-10 flex-1 content-start">
         {modules.map((mod, i) => (
           <div 
             key={i} 
-            className={`group flex flex-col rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden ${mod.borderGlow}`}
+            className={`group flex flex-col rounded-xl border border-border/60 bg-card/40 backdrop-blur-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${mod.borderGlow}`}
           >
             {/* Header do Card */}
-            <div className="p-5 flex items-start gap-4">
-              <div className={`p-3 rounded-xl shadow-inner border border-white/10 dark:border-white/5 ${mod.bgLight} transition-colors duration-300`}>
+            <div className="p-3 flex items-start gap-3">
+              <div className={`p-2.5 rounded-xl shadow-inner border border-white/10 dark:border-white/5 ${mod.bgLight} transition-colors duration-300`}>
                 {mod.icon}
               </div>
-              <div className="pt-1.5">
+              <div className="pt-1">
                 <h2 className="font-semibold text-lg tracking-tight text-foreground group-hover:text-primary transition-colors">{mod.title}</h2>
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{mod.description}</p>
               </div>
             </div>
             
             {/* Ações / Links */}
-            <div className="px-3 pb-3 pt-1 flex-1 flex flex-col justify-end">
-              <ul className="space-y-1">
+            <div className="px-2 pb-2 pt-0 flex-1 flex flex-col justify-end">
+              <ul className="space-y-0.5">
                 {mod.links.map((link, j) => (
                   <li key={j}>
                     <Link 
                       href={link.href}
-                      className="group/link flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/80 shadow-sm border border-transparent hover:border-border/60 transition-all duration-200"
+                      className="group/link flex items-center justify-between px-2 py-1.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/80 shadow-sm border border-transparent hover:border-border/60 transition-all duration-200"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-muted-foreground/60 group-hover/link:text-primary transition-colors duration-200">
