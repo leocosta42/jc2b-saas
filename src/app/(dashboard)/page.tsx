@@ -116,9 +116,9 @@ export default async function DashboardPage() {
             <Sparkles className="h-3.5 w-3.5" />
             <span>Workspace Ativo</span>
           </div>
-          <div className="py-2">
-            <Image src="/logo.png" alt="JC2B Parts" width={280} height={90} className="object-contain" priority />
-          </div>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
+            JC2B <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">PARTS</span>
+          </h1>
           <p className="text-muted-foreground text-lg max-w-xl leading-relaxed">
             Gestão integrada de ponta a ponta. Acompanhe suas vendas, controle seu estoque e expanda seus resultados.
           </p>
