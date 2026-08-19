@@ -10,7 +10,7 @@ import {
   SortingState,
 } from "@tanstack/react-table"
 import { ArrowUpDown, Search, Edit, Trash2, Users } from "lucide-react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { deleteCliente } from "@/app/actions/clientes"
 
 export type Cliente = {
@@ -164,31 +164,26 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
 }
 
 function ActionButtons({ cliente }: { cliente: Cliente }) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirm(`Tem certeza que deseja excluir o cliente "${cliente.nome}"? Esta ação não pode ser desfeita.`)) return
 
-    startTransition(async () => {
-      const res = await deleteCliente(cliente.id)
-      if (res.error) {
-        alert("Erro ao excluir: " + res.error)
-      } else {
-        router.refresh()
-      }
-    })
+    setIsPending(true)
+    const res = await deleteCliente(cliente.id)
+    setIsPending(false)
+    if (res.error) alert("Erro ao excluir: " + res.error)
   }
 
   return (
     <div className="flex justify-end gap-2">
-      <button
-        onClick={() => router.push(`/clientes/${cliente.id}/editar`)}
+      <Link
+        href={`/clientes/${cliente.id}/editar`}
         title="Editar cliente"
         className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-violet-500/10 hover:text-violet-500 transition-colors"
       >
         <Edit className="h-4 w-4" />
-      </button>
+      </Link>
       <button
         onClick={handleDelete}
         disabled={isPending}

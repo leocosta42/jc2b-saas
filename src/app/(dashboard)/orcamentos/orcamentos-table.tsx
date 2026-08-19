@@ -10,7 +10,6 @@ import {
   SortingState,
 } from "@tanstack/react-table"
 import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2, Printer, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { convertToPedido, deleteDocumento } from "@/app/actions/vendas"
 import Link from "next/link"
 
@@ -32,29 +31,24 @@ export type Pedido = {
 
 const ActionCell = ({ row }: { row: any }) => {
   const p = row.original
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
 
-  const handleAprovar = () => {
+  const handleAprovar = async () => {
     if (!confirm("Tem certeza que deseja aprovar este orçamento? O estoque dos itens será baixado e ele se tornará um pedido.")) return
     
-    startTransition(async () => {
-      const res = await convertToPedido(p.id)
-      if (res.error) {
-        alert(res.error)
-      } else {
-        router.refresh()
-      }
-    })
+    setIsPending(true)
+    const res = await convertToPedido(p.id)
+    setIsPending(false)
+    if (res.error) alert(res.error)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if(!confirm(`Tem certeza que deseja excluir este ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}?`)) return
-    startTransition(async () => {
-      const res = await deleteDocumento(p.id, p.tipo as 'ORCAMENTO' | 'PEDIDO')
-      if(res.error) alert(res.error)
-      else router.refresh()
-    })
+    
+    setIsPending(true)
+    const res = await deleteDocumento(p.id, p.tipo as 'ORCAMENTO' | 'PEDIDO')
+    setIsPending(false)
+    if(res.error) alert(res.error)
   }
 
   return (

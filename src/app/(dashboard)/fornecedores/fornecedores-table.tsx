@@ -10,7 +10,7 @@ import {
   SortingState,
 } from "@tanstack/react-table"
 import { ArrowUpDown, Search, Edit, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { deleteFornecedor } from "@/app/actions/fornecedores"
 
 export type Fornecedor = {
@@ -155,31 +155,26 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
 }
 
 function ActionButtons({ fornecedor }: { fornecedor: Fornecedor }) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirm(`Tem certeza que deseja excluir o fornecedor "${fornecedor.nome}"? Esta ação não pode ser desfeita.`)) return
 
-    startTransition(async () => {
-      const res = await deleteFornecedor(fornecedor.id)
-      if (res.error) {
-        alert("Erro ao excluir: " + res.error)
-      } else {
-        router.refresh()
-      }
-    })
+    setIsPending(true)
+    const res = await deleteFornecedor(fornecedor.id)
+    setIsPending(false)
+    if (res.error) alert("Erro ao excluir: " + res.error)
   }
 
   return (
     <div className="flex justify-end gap-2">
-      <button
-        onClick={() => router.push(`/fornecedores/${fornecedor.id}/editar`)}
+      <Link
+        href={`/fornecedores/${fornecedor.id}/editar`}
         title="Editar fornecedor"
         className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-orange-500/10 hover:text-orange-500 transition-colors"
       >
         <Edit className="h-4 w-4" />
-      </button>
+      </Link>
       <button
         onClick={handleDelete}
         disabled={isPending}
