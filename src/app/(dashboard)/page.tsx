@@ -103,7 +103,7 @@ const modules = [
 
 export default async function DashboardPage() {
   return (
-    <div className="flex-1 space-y-8 p-6 md:p-10 min-h-[calc(100vh-3.5rem)] md:min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background relative overflow-hidden">
+    <div className="flex-1 space-y-8 p-6 md:p-10 min-h-[calc(100vh-3.5rem)] md:min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background relative">
       
       {/* Decoração de Fundo */}
       <div className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl opacity-50 pointer-events-none" />
