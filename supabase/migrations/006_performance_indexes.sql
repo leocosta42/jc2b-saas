@@ -22,18 +22,17 @@ CREATE INDEX IF NOT EXISTS idx_vendedores_tenant_id    ON vendedores(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_vendedores_cpf_cnpj     ON vendedores(tenant_id, cpf_cnpj);
 
 -- ==============================
--- PRODUTOS
+-- PRODUTOS (campo SKU, nao codigo)
 -- ==============================
 CREATE INDEX IF NOT EXISTS idx_produtos_tenant_id      ON produtos(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_produtos_codigo         ON produtos(tenant_id, codigo);
+CREATE INDEX IF NOT EXISTS idx_produtos_sku            ON produtos(tenant_id, sku);
 
 -- ==============================
 -- PEDIDOS
 -- ==============================
 CREATE INDEX IF NOT EXISTS idx_pedidos_tenant_id       ON pedidos(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_pedidos_created_at      ON pedidos(tenant_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_pedidos_tipo_status     ON pedidos(tenant_id, tipo, status);
-CREATE INDEX IF NOT EXISTS idx_pedidos_cod_cliente     ON pedidos(tenant_id, cod_cliente);
+CREATE INDEX IF NOT EXISTS idx_pedidos_status          ON pedidos(tenant_id, status);
 
 -- ==============================
 -- ITENS_PEDIDO
