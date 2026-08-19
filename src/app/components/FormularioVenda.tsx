@@ -88,8 +88,8 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   }
 
   // Cálculos
-  const totalQtde = itens.reduce((acc, item) => acc + Number(item.quantidade), 0)
-  const subtotalTotal = itens.reduce((acc, item) => {
+  const totalQtde = itens.reduce((acc: number, item: any) => acc + Number(item.quantidade), 0)
+  const subtotalTotal = itens.reduce((acc: number, item: any) => {
     const preco = Number(item.preco_unitario) * Number(item.quantidade)
     const desc = preco * (Number(item.desconto_percentual) / 100)
     return acc + (preco - desc)
@@ -100,7 +100,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
 
     // Validações básicas
     if (!clienteId) return alert("Selecione um cliente")
-    if (itens.some(i => !i.produto_id)) return alert("Selecione os produtos para todos os itens")
+    if (itens.some((i: any) => !i.produto_id)) return alert("Selecione os produtos para todos os itens")
 
     startTransition(async () => {
       const docData = {
@@ -111,7 +111,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         data_entrega: dataEntrega,
         forma_pagamento: formaPagamento,
         observacoes,
-        itens: itens.map(i => ({
+        itens: itens.map((i: any) => ({
           produto_id: i.produto_id,
           quantidade: Number(i.quantidade),
           preco_unitario: Number(i.preco_unitario),
@@ -235,7 +235,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {itens.map((item, index) => {
+                  {itens.map((item: any, index: number) => {
                     const sub = (Number(item.quantidade) * Number(item.preco_unitario)) * (1 - (Number(item.desconto_percentual)/100))
                     
                     return (
