@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useMemo } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -84,10 +84,13 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
 
-  const filteredData = data.filter(forn =>
-    forn.nome.toLowerCase().includes(filter.toLowerCase()) ||
-    (forn.cnpj_cpf && forn.cnpj_cpf.includes(filter)) ||
-    (forn.codigo && forn.codigo.toLowerCase().includes(filter.toLowerCase()))
+  const filteredData = useMemo(() => 
+    data.filter(forn =>
+      forn.nome.toLowerCase().includes(filter.toLowerCase()) ||
+      (forn.cnpj_cpf && forn.cnpj_cpf.includes(filter)) ||
+      (forn.codigo && forn.codigo.toLowerCase().includes(filter.toLowerCase()))
+    ),
+    [data, filter]
   )
 
   const table = useReactTable({

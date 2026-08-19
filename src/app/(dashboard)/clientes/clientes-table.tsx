@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useMemo } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -94,9 +94,12 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
 
-  const filteredData = data.filter(cliente =>
-    cliente.nome.toLowerCase().includes(filter.toLowerCase()) ||
-    (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(filter))
+  const filteredData = useMemo(() => 
+    data.filter(cliente =>
+      cliente.nome.toLowerCase().includes(filter.toLowerCase()) ||
+      (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(filter))
+    ),
+    [data, filter]
   )
 
   const table = useReactTable({

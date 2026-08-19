@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   ColumnDef,
   flexRender,
@@ -164,9 +164,12 @@ export function EstoqueTable({ data }: DataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
 
-  const filteredData = data.filter(item => 
-    item.descricao.toLowerCase().includes(filter.toLowerCase()) ||
-    item.codigo.toLowerCase().includes(filter.toLowerCase())
+  const filteredData = useMemo(() => 
+    data.filter(item => 
+      item.descricao.toLowerCase().includes(filter.toLowerCase()) ||
+      item.codigo.toLowerCase().includes(filter.toLowerCase())
+    ),
+    [data, filter]
   )
 
   const table = useReactTable({

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useMemo } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -146,9 +146,12 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filter, setFilter] = useState("")
 
-  const filteredData = data.filter(pedido => 
-    pedido.cliente.toLowerCase().includes(filter.toLowerCase()) ||
-    pedido.numero.toString().includes(filter)
+  const filteredData = useMemo(() => 
+    data.filter(pedido => 
+      pedido.cliente.toLowerCase().includes(filter.toLowerCase()) ||
+      pedido.numero.toString().includes(filter)
+    ),
+    [data, filter]
   )
 
   const table = useReactTable({
