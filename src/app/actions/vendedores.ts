@@ -69,7 +69,7 @@ export async function createVendedor(formData: FormData) {
 
     const validatedData = vendedorSchema.safeParse(rawData);
     if (!validatedData.success) {
-      return { error: validatedData.error.errors[0].message };
+      return { error: validatedData.error.issues[0].message };
     }
     const { codigo, nome, telefone, email, documento, comissao_percentual } = validatedData.data;
     const comissao = parseFloat(comissao_percentual || "0");
@@ -162,7 +162,7 @@ export async function updateVendedor(id: string, formData: FormData) {
 
     const validatedData = vendedorSchema.safeParse(rawData);
     if (!validatedData.success) {
-      return { error: validatedData.error.errors[0].message };
+      return { error: validatedData.error.issues[0].message };
     }
     const { codigo, nome, telefone, email, documento, comissao_percentual } = validatedData.data;
     const comissao = parseFloat(comissao_percentual || "0");

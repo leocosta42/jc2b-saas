@@ -39,7 +39,7 @@ export async function createFornecedor(formData: FormData) {
 
     const validatedData = fornecedorSchema.safeParse(rawData);
     if (!validatedData.success) {
-      return { error: validatedData.error.errors[0].message };
+      return { error: validatedData.error.issues[0].message };
     }
     const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
 
@@ -113,7 +113,7 @@ export async function updateFornecedor(id: string, formData: FormData) {
 
     const validatedData = fornecedorSchema.safeParse(rawData);
     if (!validatedData.success) {
-      return { error: validatedData.error.errors[0].message };
+      return { error: validatedData.error.issues[0].message };
     }
     const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
 
