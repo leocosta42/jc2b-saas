@@ -1,15 +1,15 @@
-"use server"
-
-import { createClient } from "@/lib/supabase/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 export async function getDocumentoCompleto(id: string) {
-  const supabase = await createClient()
-  const { data: authData } = await supabase.auth.getUser()
-  if (!authData?.user) return { error: "Não autenticado" }
+  // Criamos um cliente que não depende de cookies/sessão para que o cliente do whatsapp consiga abrir a página
+  // Usamos a chave SERVICE_ROLE (se configurada) para ler os dados, ou a padrão.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  
+  const supabase = createSupabaseClient(supabaseUrl, supabaseKey)
 
-  const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
-  if (!profile?.tenant_id) return { error: "Empresa não encontrada" }
-
+  // Faz a busca direta pelo ID. O ID é um UUID impossível de adivinhar, 
+  // servindo como uma "senha" natural para a visualização pública.
   const { data, error } = await supabase
     .from('pedidos')
     .select(`
@@ -39,7 +39,6 @@ export async function getDocumentoCompleto(id: string) {
       )
     `)
     .eq('id', id)
-    .eq('tenant_id', profile.tenant_id)
     .single()
 
   if (error) return { error: error.message }

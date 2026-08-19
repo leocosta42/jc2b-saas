@@ -37,8 +37,11 @@ export async function updateSession(request: NextRequest) {
   // Rotas que não exigem login
   const publicRoutes = ['/login', '/esqueci-senha', '/redefinir-senha']
 
+  // Verifica se a rota começa com /imprimir
+  const isPublicDynamicRoute = path.startsWith('/imprimir/')
+
   // Se o usuário tentar acessar página privada e não estiver logado
-  if (!user && !publicRoutes.includes(path)) {
+  if (!user && !publicRoutes.includes(path) && !isPublicDynamicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
