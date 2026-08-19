@@ -30,17 +30,16 @@ export type Pedido = {
   mes: string
 }
 
-export function OrcamentosTable({ data }: { data: Pedido[] }) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [filter, setFilter] = useState("")
+const ActionCell = ({ row }: { row: any }) => {
+  const p = row.original
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const handleAprovar = (id: string) => {
+  const handleAprovar = () => {
     if (!confirm("Tem certeza que deseja aprovar este orçamento? O estoque dos itens será baixado e ele se tornará um pedido.")) return
     
     startTransition(async () => {
-      const res = await convertToPedido(id)
+      const res = await convertToPedido(p.id)
       if (res.error) {
         alert(res.error)
       } else {
@@ -49,109 +48,114 @@ export function OrcamentosTable({ data }: { data: Pedido[] }) {
     })
   }
 
+  const handleDelete = () => {
+    if(!confirm(`Tem certeza que deseja excluir este ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}?`)) return
+    startTransition(async () => {
+      const res = await deleteDocumento(p.id, p.tipo as 'ORCAMENTO' | 'PEDIDO')
+      if(res.error) alert(res.error)
+      else router.refresh()
+    })
+  }
+
+  return (
+    <div className="flex justify-end gap-2">
+      {p.tipo === 'ORCAMENTO' && (
+        <button 
+          onClick={handleAprovar}
+          disabled={isPending}
+          title="Aprovar Orçamento e Gerar Pedido"
+          className="h-8 flex items-center gap-1 px-2 rounded-md bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50"
+        >
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          <span className="text-xs font-semibold hidden lg:inline">Aprovar</span>
+        </button>
+      )}
+      <a 
+        href={`/imprimir/${p.id}`}
+        target="_blank"
+        title="Imprimir / Gerar PDF"
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+      >
+        <Printer className="h-4 w-4" />
+      </a>
+      <Link 
+        href={`/${p.tipo === 'ORCAMENTO' ? 'orcamentos' : 'pedidos'}/novo?edit_id=${p.id}`}
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+        title="Editar"
+      >
+        <Edit className="h-4 w-4" />
+      </Link>
+      <button 
+        onClick={handleDelete}
+        disabled={isPending}
+        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
+        title="Excluir"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
+export const columns: ColumnDef<Pedido>[] = [
+  {
+    accessorKey: "numero",
+    header: "Número",
+    cell: ({ row }) => <span className="font-semibold text-indigo-500">#{row.getValue("numero")}</span>,
+  },
+  {
+    accessorKey: "tipo",
+    header: "Tipo",
+    cell: ({ row }) => {
+      const tipo = row.getValue("tipo") as string
+      const color = tipo === 'PEDIDO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+      return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${color}`}>{tipo}</span>
+    },
+  },
+  {
+    accessorKey: "cliente",
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+      >
+        Cliente
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    ),
+    cell: ({ row }) => <div className="font-medium whitespace-nowrap">{row.getValue("cliente")}</div>,
+  },
+  {
+    accessorKey: "data_emissao",
+    header: "Emissão",
+    cell: ({ row }) => <div className="whitespace-nowrap">{row.getValue("data_emissao")}</div>,
+  },
+  {
+    accessorKey: "valor_total",
+    header: () => <div className="text-right">Valor Total</div>,
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue("valor_total")) || 0
+      const formatted = new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(amount)
+      return <div className="text-right font-medium">{formatted}</div>
+    },
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => <ActionCell row={row} />,
+  },
+]
+
+export function OrcamentosTable({ data }: { data: Pedido[] }) {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [filter, setFilter] = useState("")
+
   const filteredData = data.filter(pedido => 
     pedido.cliente.toLowerCase().includes(filter.toLowerCase()) ||
     pedido.numero.toString().includes(filter)
   )
-
-  const columns: ColumnDef<Pedido>[] = [
-    {
-      accessorKey: "numero",
-      header: "Número",
-      cell: ({ row }) => <span className="font-semibold text-indigo-500">#{row.getValue("numero")}</span>,
-    },
-    {
-      accessorKey: "tipo",
-      header: "Tipo",
-      cell: ({ row }) => {
-        const tipo = row.getValue("tipo") as string
-        const color = tipo === 'PEDIDO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-        return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${color}`}>{tipo}</span>
-      },
-    },
-    {
-      accessorKey: "cliente",
-      header: ({ column }) => (
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
-        >
-          Cliente
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      ),
-      cell: ({ row }) => <div className="font-medium whitespace-nowrap">{row.getValue("cliente")}</div>,
-    },
-    {
-      accessorKey: "data_emissao",
-      header: "Emissão",
-      cell: ({ row }) => <div className="whitespace-nowrap">{row.getValue("data_emissao")}</div>,
-    },
-    {
-      accessorKey: "valor_total",
-      header: () => <div className="text-right">Valor Total</div>,
-      cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("valor_total")) || 0
-        const formatted = new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        }).format(amount)
-        return <div className="text-right font-medium">{formatted}</div>
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const p = row.original
-        return (
-          <div className="flex justify-end gap-2">
-            {p.tipo === 'ORCAMENTO' && (
-              <button 
-                onClick={() => handleAprovar(p.id)}
-                disabled={isPending}
-                title="Aprovar Orçamento e Gerar Pedido"
-                className="h-8 flex items-center gap-1 px-2 rounded-md bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50"
-              >
-                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                <span className="text-xs font-semibold hidden lg:inline">Aprovar</span>
-              </button>
-            )}
-            <a 
-              href={`/imprimir/${p.id}`}
-              target="_blank"
-              title="Imprimir / Gerar PDF"
-              className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
-            >
-              <Printer className="h-4 w-4" />
-            </a>
-            <Link 
-              href={`/${p.tipo === 'ORCAMENTO' ? 'orcamentos' : 'pedidos'}/novo?edit_id=${p.id}`}
-              className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
-              title="Editar"
-            >
-              <Edit className="h-4 w-4" />
-            </Link>
-            <button 
-              onClick={async () => {
-                if(confirm(`Tem certeza que deseja excluir este ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}?`)) {
-                  startTransition(async () => {
-                    const res = await deleteDocumento(p.id, p.tipo as 'ORCAMENTO' | 'PEDIDO')
-                    if(res.error) alert(res.error)
-                    else router.refresh()
-                  })
-                }
-              }}
-              disabled={isPending}
-              className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
-              title="Excluir"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        )
-      },
-    },
-  ]
 
   const table = useReactTable({
     data: filteredData,
