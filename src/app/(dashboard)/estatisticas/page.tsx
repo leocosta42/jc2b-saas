@@ -1,108 +1,117 @@
 import { createClient } from '@/lib/supabase/server'
 import { EstatisticasTable, Estatistica } from './estatisticas-table'
-import { BarChart3 } from 'lucide-react'
+import { BarChart3, Users, Package, ShoppingBag, DollarSign, TrendingUp } from 'lucide-react'
 
-const mockEstatisticas: Estatistica[] = [
-  {
-    id: "1",
-    cod_cliente: "C-102",
-    mes: "agosto",
-    nome: "TIAGO GUSTINELLI BORTOLETTO ME",
-    pedido: "2119",
-    data_emissao: "18/08/2026",
-    item: "1",
-    codigo_produto: "PRD-001",
-    descricao: "Mochila Executiva Premium",
-    qtde: 5,
-    um: "UN",
-    valor_unit: 250.00,
-    valor_total: 1250.00,
-    valor_custo: 500.00,
-    lucro_venda: 750.00,
-    identificador: "ID-9092"
-  },
-  {
-    id: "2",
-    cod_cliente: "C-102",
-    mes: "agosto",
-    nome: "TIAGO GUSTINELLI BORTOLETTO ME",
-    pedido: "2119",
-    data_emissao: "18/08/2026",
-    item: "2",
-    codigo_produto: "PRD-045",
-    descricao: "Caneca de Cerâmica Branca",
-    qtde: 20,
-    um: "UN",
-    valor_unit: 35.00,
-    valor_total: 700.00,
-    valor_custo: 200.00,
-    lucro_venda: 500.00,
-    identificador: "ID-9093"
-  },
-  {
-    id: "3",
-    cod_cliente: "C-088",
-    mes: "julho",
-    nome: "SBA-MAQUINAS PARA BOBINAGEM",
-    pedido: "2105",
-    data_emissao: "25/07/2026",
-    item: "1",
-    codigo_produto: "PRD-010",
-    descricao: "Uniforme Esportivo - Kit",
-    qtde: 50,
-    um: "CX",
-    valor_unit: 145.00,
-    valor_total: 7250.00,
-    valor_custo: 3500.00,
-    lucro_venda: 3750.00,
-    identificador: "ID-8841"
-  }
-]
+export const dynamic = 'force-dynamic'
 
 export default async function EstatisticasPage() {
-  let estatisticas: Estatistica[] = mockEstatisticas
+  const supabase = await createClient()
   
-  try {
-    const supabase = await createClient()
+  // 1. Obter informações de KPIs
+  const { count: clientesCount } = await supabase.from('clientes').select('*', { count: 'exact', head: true })
+  const { count: fornecedoresCount } = await supabase.from('fornecedores').select('*', { count: 'exact', head: true })
+  const { count: produtosCount } = await supabase.from('produtos').select('*', { count: 'exact', head: true })
+  
+  // 2. Faturamento e Lucro
+  // O ideal seria usar uma RPC function do PostgreSQL para sum(), mas vamos agregar no server side para simplificar o MVP
+  const { data: pedidos } = await supabase
+    .from('pedidos')
+    .select('valor_total, status, created_at')
     
-    // Future real integration logic: This would ideally be a view or a complex join across pedidos, itens_pedido, produtos, and clientes
-    // We keep mock logic for now to ensure front-end validation
-  } catch (error) {
-    console.warn("⚠️ Usando mock data para estatísticas.")
+  let faturamentoTotal = 0;
+  let pedidosAprovados = 0;
+  
+  if (pedidos) {
+    pedidos.forEach(p => {
+      // Ignorar orçamentos não faturados se houver distinção de status
+      if (p.status !== 'Cancelado') {
+        faturamentoTotal += Number(p.valor_total || 0);
+        pedidosAprovados++;
+      }
+    })
   }
+
+  // Estatisticas para a tabela (mocks por enquanto pois envolve join complexo com itens_pedido que deixaremos para depois)
+  const mockEstatisticas: Estatistica[] = []
 
   return (
     <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-teal-600 mb-1">
+          <div className="flex items-center gap-2 text-primary mb-1">
             <BarChart3 className="h-5 w-5" />
-            <span className="font-semibold tracking-wider uppercase text-sm">Módulo de Relatórios</span>
+            <span className="font-semibold tracking-wider uppercase text-sm">Visão de Negócios</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Base Estatísticas</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Base de Estatísticas</h1>
           <p className="text-muted-foreground mt-1">
-            Visão analítica detalhada de vendas, custos e lucratividade por item.
+            Acompanhe o desempenho das suas vendas e indicadores em tempo real.
           </p>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm p-6">
-          <p className="text-sm font-medium text-muted-foreground">Faturamento Total (Listado)</p>
-          <p className="text-2xl font-bold mt-2 text-foreground">R$ 9.200,00</p>
+      {/* KPI Cards Reais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl shadow-sm p-6 hover:border-primary/30 transition-colors">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Faturamento Bruto</p>
+              <p className="text-3xl font-black mt-2 text-foreground">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(faturamentoTotal)}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-primary/10 text-primary">
+              <DollarSign className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center text-xs text-emerald-500 font-medium">
+            <TrendingUp className="h-3 w-3 mr-1" />
+            <span>Atualizado em tempo real</span>
+          </div>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm p-6">
-          <p className="text-sm font-medium text-muted-foreground">Custo Total (Listado)</p>
-          <p className="text-2xl font-bold mt-2 text-foreground">R$ 4.200,00</p>
+
+        <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl shadow-sm p-6 hover:border-blue-500/30 transition-colors">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Pedidos / Vendas</p>
+              <p className="text-3xl font-black mt-2 text-foreground">{pedidosAprovados}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Pedidos emitidos ativos</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm p-6">
-          <p className="text-sm font-medium text-muted-foreground">Lucro Total (Listado)</p>
-          <p className="text-2xl font-bold mt-2 text-emerald-500">R$ 5.000,00</p>
+
+        <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl shadow-sm p-6 hover:border-emerald-500/30 transition-colors">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Clientes Cadastrados</p>
+              <p className="text-3xl font-black mt-2 text-foreground">{clientesCount || 0}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+              <Users className="h-5 w-5" />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Na base de dados</p>
+        </div>
+
+        <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl shadow-sm p-6 hover:border-indigo-500/30 transition-colors">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Produtos Ativos</p>
+              <p className="text-3xl font-black mt-2 text-foreground">{produtosCount || 0}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-500">
+              <Package className="h-5 w-5" />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Itens disponíveis</p>
         </div>
       </div>
 
-      <EstatisticasTable data={estatisticas} />
+      <div className="mt-8">
+        <EstatisticasTable data={mockEstatisticas} />
+      </div>
     </div>
   )
 }
