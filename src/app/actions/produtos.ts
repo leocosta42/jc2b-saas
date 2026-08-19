@@ -118,6 +118,9 @@ export async function deleteProduto(id: string) {
 
     if (error) {
       console.error("Erro ao deletar produto:", error)
+      if (error.code === '23503') {
+        return { error: "Não é possível excluir este produto pois ele já está vinculado a um ou mais pedidos/orçamentos. Para manter o histórico correto, considere apenas desativá-lo." }
+      }
       return { error: "Erro no banco de dados: " + error.message }
     }
 
