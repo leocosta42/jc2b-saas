@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { fornecedorSchema } from "./schema"
 
 async function getTenantId(supabase: any, userId: string): Promise<string | null> {
   const { data: profile } = await supabase
@@ -21,18 +22,26 @@ export async function createFornecedor(formData: FormData) {
     const tenantId = await getTenantId(supabase, authData.user.id)
     if (!tenantId) return { error: "Empresa não encontrada. Execute o script de correção no Supabase." }
 
-    const codigo = formData.get("codigo") as string
-    const nome = formData.get("nome") as string
-    const documento = formData.get("documento") as string
-    const celular = formData.get("celular") as string
-    const email = formData.get("email") as string
-    const cep = formData.get("cep") as string
-    const rua = formData.get("rua") as string
-    const numero = formData.get("numero") as string
-    const complemento = formData.get("complemento") as string
-    const bairro = formData.get("bairro") as string
-    const cidade = formData.get("cidade") as string
-    const estado = formData.get("estado") as string
+    const rawData = {
+      codigo: formData.get("codigo") as string,
+      nome: formData.get("nome") as string,
+      documento: formData.get("documento") as string,
+      celular: formData.get("celular") as string,
+      email: formData.get("email") as string,
+      cep: formData.get("cep") as string,
+      rua: formData.get("rua") as string,
+      numero: formData.get("numero") as string,
+      complemento: formData.get("complemento") as string,
+      bairro: formData.get("bairro") as string,
+      cidade: formData.get("cidade") as string,
+      estado: formData.get("estado") as string,
+    };
+
+    const validatedData = fornecedorSchema.safeParse(rawData);
+    if (!validatedData.success) {
+      return { error: validatedData.error.errors[0].message };
+    }
+    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
 
     // Validar CNPJ/CPF duplicado
     if (documento) {
@@ -87,18 +96,26 @@ export async function updateFornecedor(id: string, formData: FormData) {
     const tenantId = await getTenantId(supabase, authData.user.id)
     if (!tenantId) return { error: "Empresa não encontrada." }
 
-    const codigo = formData.get("codigo") as string
-    const nome = formData.get("nome") as string
-    const documento = formData.get("documento") as string
-    const celular = formData.get("celular") as string
-    const email = formData.get("email") as string
-    const cep = formData.get("cep") as string
-    const rua = formData.get("rua") as string
-    const numero = formData.get("numero") as string
-    const complemento = formData.get("complemento") as string
-    const bairro = formData.get("bairro") as string
-    const cidade = formData.get("cidade") as string
-    const estado = formData.get("estado") as string
+    const rawData = {
+      codigo: formData.get("codigo") as string,
+      nome: formData.get("nome") as string,
+      documento: formData.get("documento") as string,
+      celular: formData.get("celular") as string,
+      email: formData.get("email") as string,
+      cep: formData.get("cep") as string,
+      rua: formData.get("rua") as string,
+      numero: formData.get("numero") as string,
+      complemento: formData.get("complemento") as string,
+      bairro: formData.get("bairro") as string,
+      cidade: formData.get("cidade") as string,
+      estado: formData.get("estado") as string,
+    };
+
+    const validatedData = fornecedorSchema.safeParse(rawData);
+    if (!validatedData.success) {
+      return { error: validatedData.error.errors[0].message };
+    }
+    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
 
     // Checar duplicado em OUTRO fornecedor
     if (documento) {

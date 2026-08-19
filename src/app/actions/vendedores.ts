@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { vendedorSchema } from "./schema"
 
 export async function createVendedor(formData: FormData) {
   try {
@@ -57,12 +58,21 @@ export async function createVendedor(formData: FormData) {
       return { error: "Falha crítica: Tenant não encontrado e não pôde ser criado automaticamente." }
     }
 
-    const codigo = formData.get("codigo") as string
-    const nome = formData.get("nome") as string
-    const telefone = formData.get("telefone") as string
-    const email = formData.get("email") as string
-    const documento = formData.get("documento") as string
-    const comissao = parseFloat(formData.get("comissao_percentual") as string) || 0
+    const rawData = {
+      codigo: formData.get("codigo") as string,
+      nome: formData.get("nome") as string,
+      telefone: formData.get("telefone") as string,
+      email: formData.get("email") as string,
+      documento: formData.get("documento") as string,
+      comissao_percentual: formData.get("comissao_percentual") as string,
+    };
+
+    const validatedData = vendedorSchema.safeParse(rawData);
+    if (!validatedData.success) {
+      return { error: validatedData.error.errors[0].message };
+    }
+    const { codigo, nome, telefone, email, documento, comissao_percentual } = validatedData.data;
+    const comissao = parseFloat(comissao_percentual || "0");
     
     // Validar se CPF já existe
     if (documento) {
@@ -141,12 +151,21 @@ export async function updateVendedor(id: string, formData: FormData) {
     const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
     if (!profile?.tenant_id) return { error: "Tenant não encontrado." }
 
-    const codigo = formData.get("codigo") as string
-    const nome = formData.get("nome") as string
-    const telefone = formData.get("telefone") as string
-    const email = formData.get("email") as string
-    const documento = formData.get("documento") as string
-    const comissao = parseFloat(formData.get("comissao_percentual") as string) || 0
+    const rawData = {
+      codigo: formData.get("codigo") as string,
+      nome: formData.get("nome") as string,
+      telefone: formData.get("telefone") as string,
+      email: formData.get("email") as string,
+      documento: formData.get("documento") as string,
+      comissao_percentual: formData.get("comissao_percentual") as string,
+    };
+
+    const validatedData = vendedorSchema.safeParse(rawData);
+    if (!validatedData.success) {
+      return { error: validatedData.error.errors[0].message };
+    }
+    const { codigo, nome, telefone, email, documento, comissao_percentual } = validatedData.data;
+    const comissao = parseFloat(comissao_percentual || "0");
 
     // Checar se CPF já existe em OUTRO vendedor
     if (documento) {
