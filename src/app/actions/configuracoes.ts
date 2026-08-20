@@ -23,7 +23,7 @@ export async function getTenantConfig() {
 
     const { data } = await supabase
       .from('tenants')
-      .select('id, name, cnpj, telefone, email, endereco, logo_url')
+      .select('id, name, cnpj, telefone, email, endereco, cep, logo_url')
       .eq('id', tenantId)
       .single()
 
@@ -49,6 +49,7 @@ export async function updateTenantConfig(formData: FormData) {
       telefone: formData.get("telefone") as string,
       email: formData.get("email") as string,
       endereco: formData.get("endereco") as string,
+      cep: formData.get("cep") as string,
       logo_url: formData.get("logo_url") as string,
     }
 

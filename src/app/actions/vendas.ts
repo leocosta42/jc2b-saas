@@ -21,16 +21,18 @@ export async function getFormData() {
   const tenantId = await getTenantId(supabase, authData.user.id)
   if (!tenantId) return { clientes: [], vendedores: [], produtos: [] }
 
-  const [clientesRes, vendedoresRes, produtosRes] = await Promise.all([
+  const [clientesRes, vendedoresRes, produtosRes, tenantRes] = await Promise.all([
     supabase.from('clientes').select('id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email').eq('tenant_id', tenantId).order('nome'),
     supabase.from('vendedores').select('id, nome').eq('tenant_id', tenantId).order('nome'),
-    supabase.from('produtos').select('id, nome, sku, preco_venda, quantidade_estoque, ncm, peso').eq('tenant_id', tenantId).order('nome')
+    supabase.from('produtos').select('id, nome, sku, preco_venda, quantidade_estoque, ncm, peso').eq('tenant_id', tenantId).order('nome'),
+    supabase.from('tenants').select('cep').eq('id', tenantId).single()
   ])
 
   return {
     clientes: clientesRes.data || [],
     vendedores: vendedoresRes.data || [],
-    produtos: produtosRes.data || []
+    produtos: produtosRes.data || [],
+    tenant_cep: tenantRes.data?.cep || '13400820'
   }
 }
 

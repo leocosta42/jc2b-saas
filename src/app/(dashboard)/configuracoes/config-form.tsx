@@ -13,6 +13,7 @@ interface ConfigFormProps {
     telefone?: string | null
     email?: string | null
     endereco?: string | null
+    cep?: string | null
     logo_url?: string | null
   }
 }
@@ -120,8 +121,19 @@ export function ConfigForm({ config }: ConfigFormProps) {
             <label htmlFor="email" className="text-sm font-medium leading-none">E-mail Comercial</label>
             <input id="email" name="email" defaultValue={config?.email || ""} type="email" placeholder="contato@empresa.com" className={inputClass} />
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <label htmlFor="endereco" className="text-sm font-medium leading-none">Endereço Completo</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">CEP de Origem (Para cálculo de Frete)</label>
+            <input 
+              name="cep" 
+              type="text" 
+              defaultValue={config?.cep || ""} 
+              className={inputClass} 
+              placeholder="Ex: 13400-820" 
+              maxLength={9}
+            />
+          </div>
+          <div className="space-y-2 lg:col-span-2">
+            <label className="text-sm font-medium">Endereço Completo</label>
             <input id="endereco" name="endereco" defaultValue={config?.endereco || ""} placeholder="Rua das Flores, 123 - Centro - São Paulo/SP" className={inputClass} />
           </div>
         </div>
