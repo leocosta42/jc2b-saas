@@ -283,6 +283,7 @@ export async function updateDocumento(id: string, data: any) {
         forma_pagamento: data.forma_pagamento,
         observacoes: data.observacoes,
         valor_frete: data.valor_frete || 0,
+        tipo_frete: data.tipo_frete || 'CIF',
         desconto_total: data.desconto_total || 0
       })
       .eq('id', id)
