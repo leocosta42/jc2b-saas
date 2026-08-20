@@ -131,7 +131,15 @@ export const columns: ColumnDef<Produto>[] = [
   },
   {
     accessorKey: "saldo_estoque",
-    header: () => <div className="text-right">Saldo Estoque</div>,
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground ml-auto"
+      >
+        Saldo Estoque
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    ),
     cell: ({ row }) => {
       const qtd = parseInt(row.getValue("saldo_estoque"))
       return <div className="text-right font-medium">{qtd}</div>
@@ -171,8 +179,11 @@ export function EstoqueTable({ data }: DataTableProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const currentQ = searchParams.get('q') || ""
+  const currentSort = searchParams.get('sort')
+  const currentOrder = searchParams.get('order')
 
-  const [sorting, setSorting] = useState<SortingState>([])
+  const initialSorting: SortingState = currentSort ? [{ id: currentSort, desc: currentOrder === 'desc' }] : []
+  const [sorting, setSorting] = useState<SortingState>(initialSorting)
   const [filter, setFilter] = useState(currentQ)
 
   useEffect(() => {
@@ -193,12 +204,29 @@ export function EstoqueTable({ data }: DataTableProps) {
     return () => clearTimeout(timer)
   }, [filter, currentQ, pathname, router, searchParams])
 
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (sorting.length > 0) {
+      const { id, desc } = sorting[0]
+      if (currentSort !== id || currentOrder !== (desc ? 'desc' : 'asc')) {
+        params.set('sort', id)
+        params.set('order', desc ? 'desc' : 'asc')
+        router.push(`${pathname}?${params.toString()}`)
+      }
+    } else if (currentSort) {
+      params.delete('sort')
+      params.delete('order')
+      router.push(`${pathname}?${params.toString()}`)
+    }
+  }, [sorting, currentSort, currentOrder, pathname, router, searchParams])
+
   const table = useReactTable({
     data: data,
     columns: columns as any,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    manualSorting: true, // Adicionado para evitar que a tabela sobrescreva a ordem server-side localmente
     state: {
       sorting,
     },

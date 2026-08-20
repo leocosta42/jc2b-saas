@@ -40,6 +40,9 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   const resolvedParams = await searchParams
   const q = typeof resolvedParams.q === 'string' ? resolvedParams.q : ''
   const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page, 10) : 1
+  const sort = typeof resolvedParams.sort === 'string' ? resolvedParams.sort : 'nome'
+  const order = typeof resolvedParams.order === 'string' ? resolvedParams.order : 'asc'
+  
   const limit = 20
   const from = (page - 1) * limit
   const to = from + limit - 1
@@ -66,8 +69,14 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
           query = query.or(`nome.ilike.%${q}%,sku.ilike.%${q}%`)
         }
         
+        // Map the frontend sort column to the database column
+        let sortCol = 'nome'
+        if (sort === 'saldo_estoque') sortCol = 'quantidade_estoque'
+        else if (sort === 'valor_venda') sortCol = 'preco_venda'
+        else if (sort === 'codigo') sortCol = 'sku'
+
         const { data, error, count } = await query
-          .order('nome', { ascending: true })
+          .order(sortCol, { ascending: order === 'asc' })
           .range(from, to)
           
         if (!error && data) {
