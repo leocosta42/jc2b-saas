@@ -43,6 +43,7 @@ CREATE TABLE clientes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
+  codigo TEXT,
   documento TEXT,
   telefone TEXT,
   email TEXT,

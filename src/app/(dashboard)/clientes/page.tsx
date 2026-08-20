@@ -40,6 +40,7 @@ export default async function ClientesPage() {
     if (!testError && testData && testData.length > 0) {
       clientes = testData.map(d => ({
         id: d.id,
+        codigo: d.codigo || "",
         nome: d.nome,
         cpf_cnpj: d.cpf_cnpj || d.documento || "-", 
         celular: d.celular || d.telefone || "-",

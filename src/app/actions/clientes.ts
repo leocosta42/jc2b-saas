@@ -23,6 +23,7 @@ export async function createCliente(formData: FormData) {
     if (!tenantId) return { error: "Empresa não encontrada. Execute o script de correção no Supabase." }
 
     const rawData = {
+      codigo: formData.get("codigo") as string,
       nome: formData.get("nome") as string,
       documento: formData.get("documento") as string,
       celular: formData.get("celular") as string,
@@ -60,6 +61,7 @@ export async function createCliente(formData: FormData) {
       .from('clientes')
       .insert({
         tenant_id: tenantId,
+        codigo: rawData.codigo,
         nome,
         cpf_cnpj: documento,
         celular,
@@ -95,6 +97,7 @@ export async function updateCliente(id: string, formData: FormData) {
     if (!tenantId) return { error: "Empresa não encontrada." }
 
     const rawData = {
+      codigo: formData.get("codigo") as string,
       nome: formData.get("nome") as string,
       documento: formData.get("documento") as string,
       celular: formData.get("celular") as string,
@@ -131,7 +134,7 @@ export async function updateCliente(id: string, formData: FormData) {
 
     const { error } = await supabase
       .from('clientes')
-      .update({ nome, cpf_cnpj: documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado })
+      .update({ codigo: rawData.codigo, nome, cpf_cnpj: documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado })
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
@@ -166,4 +169,34 @@ export async function deleteCliente(id: string) {
   } catch (err: any) {
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
+}
+
+export async function getNextClienteCodigo() {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return 'CLI0001'
+
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return 'CLI0001'
+
+  const { data, error } = await supabase
+    .from('clientes')
+    .select('codigo')
+    .eq('tenant_id', tenantId)
+    .ilike('codigo', 'CLI%')
+    .order('codigo', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error || !data || !data.codigo) {
+    return 'CLI0001'
+  }
+
+  const match = data.codigo.match(/CLI(\d+)/i)
+  if (match && match[1]) {
+    const nextNum = parseInt(match[1], 10) + 1
+    return `CLI${String(nextNum).padStart(4, '0')}`
+  }
+
+  return 'CLI0001'
 }

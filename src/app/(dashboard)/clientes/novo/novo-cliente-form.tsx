@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { createCliente } from "@/app/actions/clientes"
 import { useTransition, useState } from "react"
 
-export function NovoClienteForm() {
+export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -15,6 +15,7 @@ export function NovoClienteForm() {
   const [bairro, setBairro] = useState("")
   const [cidade, setCidade] = useState("")
   const [estado, setEstado] = useState("")
+  const [codigo, setCodigo] = useState(nextCodigo)
   const [buscandoCep, setBuscandoCep] = useState(false)
 
   const handleCepBlur = async () => {
@@ -87,6 +88,19 @@ export function NovoClienteForm() {
                 </h3>
               </div>
               <div className="p-6 grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="codigo" className="text-sm font-medium leading-none">Código do Cliente</label>
+                    <button 
+                      type="button" 
+                      onClick={() => setCodigo(nextCodigo)}
+                      className="text-xs text-violet-500 hover:text-violet-600 font-medium"
+                    >
+                      Gerar Sequencial
+                    </button>
+                  </div>
+                  <input id="codigo" name="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: CLI0001" className={inputClass} />
+                </div>
                 <div className="space-y-2 md:col-span-2">
                   <label htmlFor="nome" className="text-sm font-medium leading-none">Nome / Razão Social <span className="text-red-500">*</span></label>
                   <input id="nome" name="nome" placeholder="Nome Completo ou Razão Social" className={inputClass} required />

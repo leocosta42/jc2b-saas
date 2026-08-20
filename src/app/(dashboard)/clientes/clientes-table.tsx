@@ -15,6 +15,7 @@ import { toast } from "sonner"
 
 export type Cliente = {
   id: string
+  codigo?: string
   nome: string
   cpf_cnpj: string
   celular: string
@@ -25,6 +26,11 @@ export type Cliente = {
 }
 
 export const columns: ColumnDef<Cliente>[] = [
+  {
+    accessorKey: "codigo",
+    header: "Código",
+    cell: ({ row }) => <span className="font-semibold text-violet-500">{row.getValue("codigo") || '-'}</span>,
+  },
   {
     accessorKey: "nome",
     header: ({ column }) => (
@@ -97,6 +103,7 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
   const filteredData = useMemo(() => 
     data.filter(cliente =>
       cliente.nome.toLowerCase().includes(filter.toLowerCase()) ||
+      (cliente.codigo && cliente.codigo.toLowerCase().includes(filter.toLowerCase())) ||
       (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(filter))
     ),
     [data, filter]
@@ -117,7 +124,7 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
-            placeholder="Buscar por nome ou CPF/CNPJ..."
+            placeholder="Buscar por código, nome ou documento..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             className="flex h-10 w-full rounded-md border border-border/50 bg-background/50 pl-8 pr-3 py-2 text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
