@@ -124,7 +124,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
             {config?.logo_url ? (
               <img src={config.logo_url} alt={config?.name} className="max-h-16 object-contain mb-2" />
             ) : (
-              <h1 className="text-xl font-bold uppercase tracking-widest text-gray-800">{config?.name || 'Sua Empresa'}</h1>
+              <img src="/logo.png" alt="JC2B Parts" className="max-h-16 object-contain mb-2" />
             )}
             <div className="text-xs text-gray-600 leading-tight text-right">
               {config?.endereco || 'Endereço não configurado'}<br/>

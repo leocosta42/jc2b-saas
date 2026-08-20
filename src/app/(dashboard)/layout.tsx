@@ -14,8 +14,8 @@ export default function DashboardLayout({
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <aside className="w-64 border-r bg-muted/20 hidden md:flex flex-col">
-        <div className="flex h-14 items-center border-b px-4 shrink-0">
-          <span className="font-black text-xl tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">JC2B PARTS</span>
+        <div className="flex h-14 items-center justify-center border-b px-4 shrink-0 bg-white">
+          <Image src="/logo.png" alt="JC2B Parts" width={140} height={40} className="object-contain" />
         </div>
         <nav className="flex-1 space-y-1.5 p-4 overflow-y-auto">
           <Link href="/" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-primary/5 hover:text-primary transition-all">

@@ -1,5 +1,7 @@
 "use client"
 
+import Image from "next/image"
+
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -39,10 +41,8 @@ export function MobileNav() {
           
           {/* Sidebar Panel */}
           <div className="relative flex w-full max-w-xs flex-col overflow-y-auto bg-background p-6 shadow-xl h-full animate-in slide-in-from-left-full duration-200">
-            <div className="flex items-center justify-between mb-8">
-              <span className="font-black text-2xl tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                JC2B PARTS
-              </span>
+            <div className="flex items-center justify-between mb-8 bg-white p-2 rounded-md">
+              <Image src="/logo.png" alt="JC2B Parts" width={140} height={40} className="object-contain" />
               <button 
                 onClick={() => setIsOpen(false)} 
                 className="rounded-md p-2 text-muted-foreground hover:bg-muted"

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Package } from 'lucide-react'
+import Image from 'next/image'
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message?: string, mode?: string }> }) {
   const supabase = await createClient()
@@ -44,8 +44,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="max-w-md w-full space-y-8 bg-background p-10 rounded-2xl shadow-xl border border-border/50">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4">
-            <Package className="h-6 w-6" />
+          <div className="mx-auto flex items-center justify-center mb-6">
+            <Image src="/logo.png" alt="JC2B Parts" width={180} height={50} className="object-contain" />
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
             {isRegister ? 'Cadastrar Vendedor' : 'Entrar no JC2B'}
