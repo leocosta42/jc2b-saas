@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { Save, Building2, Image as ImageIcon, MapPin, Contact2, Loader2, Upload } from "lucide-react"
 import { updateTenantConfig } from "@/app/actions/configuracoes"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 interface ConfigFormProps {
   config?: {
@@ -17,6 +18,7 @@ interface ConfigFormProps {
 }
 
 export function ConfigForm({ config }: ConfigFormProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   
   // Em um ambiente real, teríamos um upload para S3/Supabase Storage.
@@ -33,6 +35,7 @@ export function ConfigForm({ config }: ConfigFormProps) {
         toast.error("Erro ao salvar", { description: res.error })
       } else {
         toast.success("Configurações salvas com sucesso!")
+        router.refresh()
       }
     })
   }

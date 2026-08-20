@@ -56,13 +56,18 @@ export async function updateTenantConfig(formData: FormData) {
       return { error: "O nome da empresa é obrigatório." }
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('tenants')
       .update(rawData)
       .eq('id', tenantId)
+      .select()
 
     if (error) {
       return { error: "Erro ao atualizar: " + error.message }
+    }
+
+    if (!data || data.length === 0) {
+      return { error: "Erro: Nenhuma linha atualizada. Verifique se o RLS (Row Level Security) da tabela 'tenants' permite a operação de UPDATE para usuários autenticados." }
     }
 
     revalidatePath("/configuracoes")
