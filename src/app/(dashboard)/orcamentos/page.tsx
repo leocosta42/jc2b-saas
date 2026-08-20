@@ -3,8 +3,19 @@ import { FileText, Plus } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 
-export default async function OrcamentosPage() {
+import { Pagination } from '@/app/components/Pagination'
+
+export default async function OrcamentosPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const resolvedParams = await searchParams
+  const q = typeof resolvedParams.q === 'string' ? resolvedParams.q : ''
+  const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page, 10) : 1
+  const limit = 20
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+
   let pedidos: Pedido[] = []
+  let totalPages = 1
+  let totalCount = 0
 
   try {
     const supabase = await createClient()
@@ -15,7 +26,7 @@ export default async function OrcamentosPage() {
       
       if (profile?.tenant_id) {
         // Busca todos os pedidos/orçamentos
-        const { data, error } = await supabase
+        let query = supabase
           .from('pedidos')
           .select(`
             id,
@@ -25,13 +36,28 @@ export default async function OrcamentosPage() {
             data_entrega,
             status,
             valor_frete,
-            clientes (nome, celular),
+            clientes!inner (nome, celular),
             itens_pedido (quantidade, preco_unitario, desconto_percentual)
-          `)
+          `, { count: 'exact' })
           .eq('tenant_id', profile.tenant_id)
+          
+        if (q) {
+          if (!isNaN(Number(q))) {
+            query = query.eq('numero_pedido', Number(q))
+          } else {
+            query = query.ilike('clientes.nome', `%${q}%`)
+          }
+        }
+        
+        const { data, error, count } = await query
           .order('numero_pedido', { ascending: false })
+          .range(from, to)
           
         if (!error && data) {
+          if (count) {
+            totalCount = count
+            totalPages = Math.ceil(count / limit)
+          }
           pedidos = data.map((d: any) => {
             // Calcula o valor total com base nos itens
             const subtotalItens = (d.itens_pedido || []).reduce((acc: number, item: any) => {
@@ -97,6 +123,10 @@ export default async function OrcamentosPage() {
       </div>
 
       <OrcamentosTable data={pedidos} />
+      
+      {totalPages > 1 && (
+        <Pagination currentPage={page} totalPages={totalPages} />
+      )}
     </div>
   )
 }

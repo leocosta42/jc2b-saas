@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useEffect } from "react"
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   ColumnDef,
   flexRender,
@@ -196,19 +197,34 @@ export const columns: ColumnDef<Pedido>[] = [
 ]
 
 export function OrcamentosTable({ data }: { data: Pedido[] }) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [filter, setFilter] = useState("")
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const currentQ = searchParams.get('q') || ""
 
-  const filteredData = useMemo(() => 
-    data.filter(pedido => 
-      pedido.cliente.toLowerCase().includes(filter.toLowerCase()) ||
-      pedido.numero.toString().includes(filter)
-    ),
-    [data, filter]
-  )
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [filter, setFilter] = useState(currentQ)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (filter) {
+        params.set('q', filter)
+      } else {
+        params.delete('q')
+      }
+      
+      if (currentQ !== filter) {
+        params.delete('page')
+        router.push(`${pathname}?${params.toString()}`)
+      }
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [filter, currentQ, pathname, router, searchParams])
 
   const table = useReactTable({
-    data: filteredData,
+    data: data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
