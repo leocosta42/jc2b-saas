@@ -41,7 +41,9 @@ export async function createProduto(formData: FormData) {
         preco_custo,
         preco_venda,
         quantidade_estoque,
-        fornecedor_id: fornecedor_id || null
+        fornecedor_id: fornecedor_id || null,
+        ncm: formData.get("ncm") as string || null,
+        peso: Number(formData.get("peso")) || 0
       })
 
     if (error) {
@@ -84,7 +86,9 @@ export async function updateProduto(id: string, formData: FormData) {
         preco_custo,
         preco_venda,
         quantidade_estoque,
-        fornecedor_id: fornecedor_id || null
+        fornecedor_id: fornecedor_id || null,
+        ncm: formData.get("ncm") as string || null,
+        peso: Number(formData.get("peso")) || 0
       })
       .eq('id', id)
       .eq('tenant_id', tenantId)
