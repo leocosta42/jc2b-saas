@@ -33,8 +33,19 @@ const mockFornecedores: Fornecedor[] = [
   }
 ]
 
-export default async function FornecedoresPage() {
-  let fornecedores: Fornecedor[] = mockFornecedores
+import { Pagination } from '@/app/components/Pagination'
+
+export default async function FornecedoresPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const resolvedParams = await searchParams
+  const q = typeof resolvedParams.q === 'string' ? resolvedParams.q : ''
+  const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page, 10) : 1
+  const limit = 20
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+
+  let fornecedores: Fornecedor[] = []
+  let totalPages = 1
+  let totalCount = 0
 
   try {
     const supabase = await createClient()
@@ -44,14 +55,25 @@ export default async function FornecedoresPage() {
       const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
       
       if (profile?.tenant_id) {
-        const { data: testData, error: testError } = await supabase
+        let query = supabase
           .from('fornecedores')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('tenant_id', profile.tenant_id)
           .eq('ativo', true)
-          .limit(50)
           
-        if (!testError && testData && testData.length > 0) {
+        if (q) {
+          query = query.or(`nome.ilike.%${q}%,documento.ilike.%${q}%,cnpj_cpf.ilike.%${q}%`)
+        }
+        
+        const { data: testData, error: testError, count } = await query
+          .order('nome', { ascending: true })
+          .range(from, to)
+          
+        if (!testError && testData) {
+          if (count) {
+            totalCount = count
+            totalPages = Math.ceil(count / limit)
+          }
       fornecedores = testData.map(d => ({
         id: d.id,
         codigo: d.codigo || "-",
@@ -94,6 +116,10 @@ export default async function FornecedoresPage() {
       </div>
 
       <FornecedoresTable data={fornecedores} />
+      
+      {totalPages > 1 && (
+        <Pagination currentPage={page} totalPages={totalPages} />
+      )}
     </div>
   )
 }
