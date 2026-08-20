@@ -22,7 +22,7 @@ export async function getFormData() {
   if (!tenantId) return { clientes: [], vendedores: [], produtos: [] }
 
   const [clientesRes, vendedoresRes, produtosRes] = await Promise.all([
-    supabase.from('clientes').select('id, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email').eq('tenant_id', tenantId).order('nome'),
+    supabase.from('clientes').select('id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email').eq('tenant_id', tenantId).order('nome'),
     supabase.from('vendedores').select('id, nome').eq('tenant_id', tenantId).order('nome'),
     supabase.from('produtos').select('id, nome, sku, preco_venda, quantidade_estoque, ncm, peso').eq('tenant_id', tenantId).order('nome')
   ])
