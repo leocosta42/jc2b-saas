@@ -21,6 +21,7 @@ interface Props {
     bairro?: string
     cidade?: string
     estado?: string
+    bloqueado?: boolean
   }
 }
 
