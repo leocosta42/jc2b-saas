@@ -322,3 +322,11 @@ CREATE INDEX IF NOT EXISTS idx_pedidos_status          ON pedidos(tenant_id, sta
 -- ==============================
 CREATE INDEX IF NOT EXISTS idx_itens_pedido_pedido_id  ON itens_pedido(pedido_id);
 CREATE INDEX IF NOT EXISTS idx_itens_pedido_produto_id ON itens_pedido(produto_id);
+
+-- Migration 007: Campos de Configuração da Empresa (Tenant)
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS cnpj TEXT,
+  ADD COLUMN IF NOT EXISTS telefone TEXT,
+  ADD COLUMN IF NOT EXISTS email TEXT,
+  ADD COLUMN IF NOT EXISTS endereco TEXT,
+  ADD COLUMN IF NOT EXISTS logo_url TEXT;

@@ -1,9 +1,11 @@
 import { getDocumentoCompleto } from "@/app/actions/imprimir"
+import { getTenantConfig } from "@/app/actions/configuracoes"
 import { notFound } from "next/navigation"
 
 export default async function ImprimirPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const res = await getDocumentoCompleto(id)
+  const config = await getTenantConfig()
   
   if (res.error) {
     return <div className="p-8 text-red-500 font-bold">Erro ao buscar pedido: {res.error}</div>
@@ -113,12 +115,18 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
           </div>
           
           {/* Logo / Info Empresa */}
-          <div className="text-right flex-1 ml-4">
-            <h1 className="text-xl font-bold uppercase tracking-widest text-gray-800">JC2B PARTS</h1>
-            <div className="text-xs text-gray-600 mt-1 leading-tight">
-              R: Ana Dias Guimarães, 309 - Dois Córregos - Piracicaba/SP<br/>
-              (19) 97137-3709<br/>
-              vendas.jc2bparts@outlook.com
+          <div className="text-right flex-1 ml-4 flex flex-col items-end">
+            {config?.logo_url ? (
+              <img src={config.logo_url} alt={config?.name} className="max-h-16 object-contain mb-2" />
+            ) : (
+              <h1 className="text-xl font-bold uppercase tracking-widest text-gray-800">{config?.name || 'Sua Empresa'}</h1>
+            )}
+            <div className="text-xs text-gray-600 leading-tight text-right">
+              {config?.endereco || 'Endereço não configurado'}<br/>
+              {config?.telefone && <span>{config.telefone}</span>}
+              {config?.telefone && config?.email && <span> | </span>}
+              {config?.email && <span>{config.email}</span>}
+              {config?.cnpj && <><br/>CNPJ: {config.cnpj}</>}
             </div>
           </div>
         </div>
