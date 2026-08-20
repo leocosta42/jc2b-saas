@@ -221,6 +221,10 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
               <span className="font-medium">{pesoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</span>
             </div>
             <div className="flex justify-between border-b border-gray-300 p-1">
+              <span>Valor dos Produtos:</span>
+              <span className="font-medium">{valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+            </div>
+            <div className="flex justify-between border-b border-gray-300 p-1">
               <span>Frete:</span>
               <span className="font-medium">{(Number(doc.valor_frete) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>
