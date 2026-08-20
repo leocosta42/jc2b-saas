@@ -43,7 +43,8 @@ export async function createProduto(formData: FormData) {
         quantidade_estoque,
         fornecedor_id: fornecedor_id || null,
         ncm: formData.get("ncm") as string || null,
-        peso: Number(formData.get("peso")) || 0
+        peso: Number(formData.get("peso")) || 0,
+        bloqueado: formData.get("bloqueado") === 'true'
       })
 
     if (error) {
@@ -88,7 +89,8 @@ export async function updateProduto(id: string, formData: FormData) {
         quantidade_estoque,
         fornecedor_id: fornecedor_id || null,
         ncm: formData.get("ncm") as string || null,
-        peso: Number(formData.get("peso")) || 0
+        peso: Number(formData.get("peso")) || 0,
+        bloqueado: formData.get("bloqueado") === 'true'
       })
       .eq('id', id)
       .eq('tenant_id', tenantId)

@@ -25,6 +25,7 @@ export type Cliente = {
   cidade?: string
   estado?: string
   status: "Ativo" | "Inativo"
+  bloqueado?: boolean
 }
 
 export const columns: ColumnDef<Cliente>[] = [
@@ -81,7 +82,17 @@ export const columns: ColumnDef<Cliente>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
+      const bloqueado = row.original.bloqueado
       const status = row.getValue("status") as string
+      
+      if (bloqueado) {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-red-500/10 text-red-500 border-red-500/20">
+            Bloqueado
+          </span>
+        )
+      }
+
       const bgColor = status === 'Ativo'
         ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
         : 'bg-muted text-muted-foreground border-border'

@@ -18,6 +18,7 @@ export const clienteSchema = addressSchema.extend({
   documento: z.string().optional(),
   celular: z.string().optional(),
   email: z.string().email("Formato de email inválido").optional().or(z.literal('')),
+  bloqueado: z.boolean().optional(),
 })
 
 // Validação de Vendedor
@@ -37,4 +38,5 @@ export const fornecedorSchema = addressSchema.extend({
   documento: z.string().optional(), // CNPJ ou CPF
   celular: z.string().optional(),
   email: z.string().email("Formato de email inválido").optional().or(z.literal('')),
+  bloqueado: z.boolean().optional(),
 })

@@ -78,6 +78,7 @@ export type Produto = {
   custo_estoque_atual: number
   fornecedor: string
   cod_forn: string
+  bloqueado?: boolean
 }
 
 export const columns: ColumnDef<Produto>[] = [
@@ -97,7 +98,16 @@ export const columns: ColumnDef<Produto>[] = [
         <ArrowUpDown className="h-4 w-4" />
       </button>
     ),
-    cell: ({ row }) => <div className="font-medium whitespace-nowrap">{row.getValue("descricao")}</div>,
+    cell: ({ row }) => (
+      <div className="font-medium whitespace-nowrap flex items-center gap-2">
+        {row.getValue("descricao")}
+        {row.original.bloqueado && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-500">
+            Bloqueado
+          </span>
+        )}
+      </div>
+    ),
   },
   {
     accessorKey: "um",

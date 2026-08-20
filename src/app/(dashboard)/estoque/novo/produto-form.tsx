@@ -112,12 +112,19 @@ export function ProdutoForm({
             <label className="text-sm font-medium">NCM Fiscal</label>
             <input name="ncm" type="text" defaultValue={produtoCopiar?.ncm || ""} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Ex: 7318.15.00" />
           </div>
-          <div className="space-y-2 lg:col-span-2">
+          <div className="space-y-2">
             <label className="text-sm font-medium">Peso (KG)</label>
             <div className="relative">
               <input name="peso" type="number" step="0.001" defaultValue={produtoCopiar?.peso || ""} className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-3 pr-10 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0.000" />
               <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">KG</span>
             </div>
+          </div>
+          <div className="space-y-2 lg:col-span-1">
+            <label htmlFor="bloqueado" className="text-sm font-medium text-red-500">Status de Bloqueio</label>
+            <select id="bloqueado" name="bloqueado" className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" defaultValue={produtoCopiar?.bloqueado ? "true" : "false"}>
+              <option value="false">Ativo / Liberado</option>
+              <option value="true">Bloqueado</option>
+            </select>
           </div>
         </div>
 

@@ -118,6 +118,13 @@ export function EditarClienteForm({ cliente }: Props) {
                   <label htmlFor="documento" className="text-sm font-medium leading-none">CPF/CNPJ</label>
                   <input id="documento" name="documento" defaultValue={cliente.cpf_cnpj || ""} placeholder="000.000.000-00" className={inputClass} />
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label htmlFor="bloqueado" className="text-sm font-medium leading-none text-red-500">Status de Bloqueio</label>
+                  <select id="bloqueado" name="bloqueado" className={inputClass} defaultValue={cliente.bloqueado ? "true" : "false"}>
+                    <option value="false">Ativo / Liberado</option>
+                    <option value="true">Bloqueado</option>
+                  </select>
+                </div>
               </div>
             </div>
 

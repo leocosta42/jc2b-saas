@@ -21,6 +21,7 @@ interface Props {
     bairro?: string
     cidade?: string
     estado?: string
+    bloqueado?: boolean
   }
 }
 
@@ -117,6 +118,13 @@ export function EditarFornecedorForm({ fornecedor }: Props) {
                 <div className="space-y-2">
                   <label htmlFor="documento" className="text-sm font-medium leading-none">CNPJ / CPF</label>
                   <input id="documento" name="documento" defaultValue={fornecedor.cnpj_cpf || ""} placeholder="00.000.000/0000-00" className={inputClass} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label htmlFor="bloqueado" className="text-sm font-medium leading-none text-red-500">Status de Bloqueio</label>
+                  <select id="bloqueado" name="bloqueado" className={inputClass} defaultValue={fornecedor.bloqueado ? "true" : "false"}>
+                    <option value="false">Ativo / Liberado</option>
+                    <option value="true">Bloqueado</option>
+                  </select>
                 </div>
               </div>
             </div>

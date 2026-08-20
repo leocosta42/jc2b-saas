@@ -35,13 +35,14 @@ export async function createFornecedor(formData: FormData) {
       bairro: formData.get("bairro") as string,
       cidade: formData.get("cidade") as string,
       estado: formData.get("estado") as string,
+      bloqueado: formData.get("bloqueado") === 'true',
     };
 
     const validatedData = fornecedorSchema.safeParse(rawData);
     if (!validatedData.success) {
       return { error: validatedData.error.issues[0].message };
     }
-    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
+    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado, bloqueado } = validatedData.data;
 
     // Validar CNPJ/CPF duplicado
     if (documento) {
@@ -73,6 +74,7 @@ export async function createFornecedor(formData: FormData) {
         bairro,
         cidade,
         estado,
+        bloqueado,
       })
 
     if (error) {
@@ -109,13 +111,14 @@ export async function updateFornecedor(id: string, formData: FormData) {
       bairro: formData.get("bairro") as string,
       cidade: formData.get("cidade") as string,
       estado: formData.get("estado") as string,
+      bloqueado: formData.get("bloqueado") === 'true',
     };
 
     const validatedData = fornecedorSchema.safeParse(rawData);
     if (!validatedData.success) {
       return { error: validatedData.error.issues[0].message };
     }
-    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
+    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado, bloqueado } = validatedData.data;
 
     // Checar duplicado em OUTRO fornecedor
     if (documento) {
@@ -134,7 +137,7 @@ export async function updateFornecedor(id: string, formData: FormData) {
 
     const { error } = await supabase
       .from('fornecedores')
-      .update({ codigo, nome, cnpj_cpf: documento, telefone: celular, email, cep, rua, numero, complemento, bairro, cidade, estado })
+      .update({ codigo, nome, cnpj_cpf: documento, telefone: celular, email, cep, rua, numero, complemento, bairro, cidade, estado, bloqueado })
       .eq('id', id)
       .eq('tenant_id', tenantId)
 

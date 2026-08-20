@@ -113,6 +113,13 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
                   <label htmlFor="inscricao" className="text-sm font-medium leading-none">Insc. Estadual</label>
                   <input id="inscricao" name="inscricao" placeholder="Opcional para PF" className={inputClass} />
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label htmlFor="bloqueado" className="text-sm font-medium leading-none text-red-500">Status de Bloqueio</label>
+                  <select id="bloqueado" name="bloqueado" className={inputClass} defaultValue="false">
+                    <option value="false">Ativo / Liberado</option>
+                    <option value="true">Bloqueado</option>
+                  </select>
+                </div>
               </div>
             </div>
 
