@@ -4,7 +4,7 @@
 // Em produção, isso faria um fetch para https://www.melhorenvio.com.br/api/v2/me/shipment/calculate
 // utilizando o Bearer Token do usuário.
 
-export async function simularMelhorEnvio(cepOrigem: string, cepDestino: string, pesoKg: number, valorSeguro: number) {
+export async function simularMelhorEnvio(cepOrigem: string, cepDestino: string, pesoKg: number, valorSeguro: number, dimC: number = 20, dimL: number = 20, dimA: number = 20) {
   const token = process.env.MELHOR_ENVIO_TOKEN
 
   if (!cepDestino || cepDestino.replace(/\D/g, '').length !== 8) {
@@ -32,9 +32,9 @@ export async function simularMelhorEnvio(cepOrigem: string, cepDestino: string, 
       volumes: [
         {
           weight: pesoKg || 1,
-          width: 20, // Dimensões padrões mínimas
-          height: 20,
-          length: 20
+          width: dimL || 20,
+          height: dimA || 20,
+          length: dimC || 20
         }
       ],
       options: {

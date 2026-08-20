@@ -45,6 +45,11 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   const [modalFreteOpen, setModalFreteOpen] = useState(false)
   const [loadingFrete, setLoadingFrete] = useState(false)
   const [freteOpcoes, setFreteOpcoes] = useState<any[]>([])
+  
+  // Dimensões do Pacote
+  const [dimC, setDimC] = useState<number>(20) // Comprimento
+  const [dimL, setDimL] = useState<number>(20) // Largura
+  const [dimA, setDimA] = useState<number>(20) // Altura
 
   // Itens
   const [itens, setItens] = useState(() => {
@@ -516,6 +521,16 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-t border-border/50 text-sm">
+                  <span className="text-muted-foreground">Dimensões (cm)</span>
+                  <div className="flex items-center gap-1">
+                    <input type="number" value={dimC} onChange={e => setDimC(Number(e.target.value) || 0)} className="w-14 h-8 rounded-md border border-input bg-background/50 text-center text-xs" title="Comprimento" />
+                    <span className="text-muted-foreground text-xs">x</span>
+                    <input type="number" value={dimL} onChange={e => setDimL(Number(e.target.value) || 0)} className="w-14 h-8 rounded-md border border-input bg-background/50 text-center text-xs" title="Largura" />
+                    <span className="text-muted-foreground text-xs">x</span>
+                    <input type="number" value={dimA} onChange={e => setDimA(Number(e.target.value) || 0)} className="w-14 h-8 rounded-md border border-input bg-background/50 text-center text-xs" title="Altura" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center py-2 border-t border-border/50 text-sm">
                   <span className="text-muted-foreground flex items-center gap-1">
                     <Truck className="h-4 w-4" />
                     Frete
@@ -529,7 +544,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                         }
                         setLoadingFrete(true)
                         const cepOrigem = dadosForm.tenant_cep || "13400820"
-                        const res = await simularMelhorEnvio(cepOrigem, clienteSelecionado.cep, totalPeso, subtotalTotal)
+                        const res = await simularMelhorEnvio(cepOrigem, clienteSelecionado.cep, totalPeso, subtotalTotal, dimC, dimL, dimA)
                         setLoadingFrete(false)
                         if (res.error) {
                           toast.error(res.error)
