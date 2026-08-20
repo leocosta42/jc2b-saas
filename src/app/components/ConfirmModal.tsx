@@ -57,7 +57,7 @@ export function ConfirmModal({
             className="fixed inset-0" 
             onClick={(e) => { e.stopPropagation(); !isPending && setIsOpen(false) }}
           ></div>
-          <div className="relative w-full max-w-md p-6 bg-card border border-border shadow-2xl rounded-2xl animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-md p-6 bg-white dark:bg-zinc-950 border border-border shadow-2xl rounded-2xl animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="flex gap-4 items-start">
               <div className={`p-3 rounded-2xl shrink-0 border ${iconColorMap[variant]}`}>
                 <AlertTriangle className="w-6 h-6" />
