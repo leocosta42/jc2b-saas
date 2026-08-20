@@ -226,11 +226,15 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
             </div>
             <div className="flex justify-between border-b border-gray-300 p-1">
               <span>Frete {doc.tipo_frete ? `(${doc.tipo_frete})` : ''}:</span>
-              <span className="font-medium">{(Number(doc.valor_frete) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              <span className="font-medium">
+                {doc.tipo_frete === 'CIF' 
+                  ? 'Por conta do Remetente' 
+                  : (Number(doc.valor_frete) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
             </div>
             <div className="flex justify-between p-1 font-bold text-sm bg-gray-100">
               <span>Valor Total:</span>
-              <span>{(valorTotal + (Number(doc.valor_frete) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              <span>{(valorTotal + (doc.tipo_frete === 'FOB' ? (Number(doc.valor_frete) || 0) : 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>
           </div>
         </div>

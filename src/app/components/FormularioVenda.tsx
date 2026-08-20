@@ -588,7 +588,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                 <div className="flex justify-between items-end pt-3 mt-3 border-t border-border/50">
                   <span className="text-base font-semibold">Total R$</span>
                   <span className={`text-2xl font-bold ${corTema}`}>
-                    {(subtotalTotal + (valorFrete || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {(subtotalTotal + (tipoFrete === 'FOB' ? (valorFrete || 0) : 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
                 </div>
               </div>
