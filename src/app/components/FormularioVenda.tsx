@@ -792,18 +792,18 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         </div>
       )}
 
-      {/* Modal Frete (Melhor Envio Simulador) */}
+      {/* Modal Frete */}
       {modalFreteOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-background rounded-xl shadow-2xl w-full max-w-lg border border-border/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-4 bg-primary/10 border-b border-border/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Truck className="h-5 w-5 text-primary" />
-                <div>
-                  <h2 className="text-base font-semibold leading-none">Cotação de Frete</h2>
-                  <p className="text-xs text-muted-foreground mt-1">Motor Melhor Envio (Simulação)</p>
-                </div>
-              </div>
+                Cotação de Frete
+                <span className="text-xs font-normal text-muted-foreground ml-2 bg-muted px-2 py-0.5 rounded-full">
+                  Motor Melhor Envio
+                </span>
+              </h2>
               <button onClick={() => setModalFreteOpen(false)} className="text-muted-foreground hover:text-foreground">
                 ✕
               </button>
