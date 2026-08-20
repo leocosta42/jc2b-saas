@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   ColumnDef,
   flexRender,
@@ -13,6 +13,7 @@ import { MoreHorizontal, ArrowUpDown, Search, Edit, Trash2, Copy } from "lucide-
 import Link from "next/link"
 import { deleteProduto } from '@/app/actions/produtos'
 import { toast } from "sonner"
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
 const ActionCell = ({ row }: { row: any }) => {
   const [isDeleting, setIsDeleting] = useState(false)
@@ -166,19 +167,34 @@ interface DataTableProps {
 }
 
 export function EstoqueTable({ data }: DataTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [filter, setFilter] = useState("")
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const currentQ = searchParams.get('q') || ""
 
-  const filteredData = useMemo(() => 
-    data.filter(item => 
-      item.descricao.toLowerCase().includes(filter.toLowerCase()) ||
-      item.codigo.toLowerCase().includes(filter.toLowerCase())
-    ),
-    [data, filter]
-  )
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [filter, setFilter] = useState(currentQ)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (filter) {
+        params.set('q', filter)
+      } else {
+        params.delete('q')
+      }
+      
+      if (currentQ !== filter) {
+        params.delete('page')
+        router.push(`${pathname}?${params.toString()}`)
+      }
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [filter, currentQ, pathname, router, searchParams])
 
   const table = useReactTable({
-    data: filteredData,
+    data: data,
     columns: columns as any,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,

@@ -34,8 +34,19 @@ const mockEstoque: Produto[] = [
   }
 ]
 
-export default async function EstoquePage() {
-  let produtos: Produto[] = mockEstoque
+import { Pagination } from '@/app/components/Pagination'
+
+export default async function EstoquePage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const resolvedParams = await searchParams
+  const q = typeof resolvedParams.q === 'string' ? resolvedParams.q : ''
+  const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page, 10) : 1
+  const limit = 20
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+
+  let produtos: Produto[] = []
+  let totalPages = 1
+  let totalCount = 0
   
   try {
     const supabase = await createClient()
@@ -45,14 +56,25 @@ export default async function EstoquePage() {
       const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
       
       if (profile?.tenant_id) {
-        const { data, error } = await supabase
+        let query = supabase
           .from('produtos')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('tenant_id', profile.tenant_id)
           .eq('ativo', true)
-          .limit(50)
           
-        if (!error && data && data.length > 0) {
+        if (q) {
+          query = query.or(`nome.ilike.%${q}%,sku.ilike.%${q}%`)
+        }
+        
+        const { data, error, count } = await query
+          .order('nome', { ascending: true })
+          .range(from, to)
+          
+        if (!error && data) {
+          if (count) {
+            totalCount = count
+            totalPages = Math.ceil(count / limit)
+          }
       produtos = data.map(d => ({
         id: d.id,
         codigo: d.sku || "N/A",
@@ -100,6 +122,10 @@ export default async function EstoquePage() {
       </div>
 
       <EstoqueTable data={produtos} />
+      
+      {totalPages > 1 && (
+        <Pagination currentPage={page} totalPages={totalPages} />
+      )}
     </div>
   )
 }
