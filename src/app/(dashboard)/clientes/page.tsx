@@ -55,12 +55,16 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
           .eq('ativo', true)
           
         if (q) {
-          query = query.or(`nome.ilike.%${q}%,documento.ilike.%${q}%,codigo.ilike.%${q}%`)
+          query = query.or(`nome.ilike.%${q}%,cpf_cnpj.ilike.%${q}%,codigo.ilike.%${q}%`)
         }
         
         const { data: testData, error: testError, count } = await query
           .order('nome', { ascending: true })
           .range(from, to)
+          
+        if (testError) {
+          console.error("ERRO BUSCA CLIENTES:", testError)
+        }
           
         if (!testError && testData) {
           if (count) {
