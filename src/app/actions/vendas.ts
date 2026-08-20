@@ -139,16 +139,17 @@ export async function convertToPedido(id: string) {
     // Pegar itens para baixar estoque
     const { data: itens } = await supabase
       .from('itens_pedido')
-      .select('produto_id, quantidade, produtos(nome)')
+      .select('produto_id, quantidade, produtos(nome, sku)')
       .eq('pedido_id', id)
       .eq('tenant_id', tenantId)
 
     // Validar estoque ANTES de converter
     if (itens) {
       for (const item of itens) {
-        const { data: prod } = await supabase.from('produtos').select('quantidade_estoque, nome').eq('id', item.produto_id).single()
+        const { data: prod } = await supabase.from('produtos').select('quantidade_estoque, nome, sku').eq('id', item.produto_id).single()
         if (prod && (prod.quantidade_estoque || 0) < item.quantidade) {
-          return { error: `Estoque insuficiente! O produto "${prod.nome}" possui apenas ${prod.quantidade_estoque || 0} em estoque. O pedido exige ${item.quantidade}.` }
+          const skuDisplay = prod.sku ? `[${prod.sku}] ` : '';
+          return { error: `Estoque insuficiente! O produto ${skuDisplay}"${prod.nome}" possui apenas ${prod.quantidade_estoque || 0} em estoque. O pedido exige ${item.quantidade}.` }
         }
       }
     }

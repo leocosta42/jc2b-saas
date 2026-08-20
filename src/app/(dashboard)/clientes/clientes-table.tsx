@@ -12,6 +12,7 @@ import {
 import { ArrowUpDown, Search, Edit, Trash2, Users, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { deleteCliente } from "@/app/actions/clientes"
+import { ConfirmModal } from "@/app/components/ConfirmModal"
 import { toast } from "sonner"
 
 export type Cliente = {
@@ -192,8 +193,6 @@ function ActionButtons({ cliente }: { cliente: Cliente }) {
   const [isPending, setIsPending] = useState(false)
 
   const handleDelete = async () => {
-    if (!confirm(`Tem certeza que deseja excluir o cliente "${cliente.nome}"? Esta ação não pode ser desfeita.`)) return
-
     setIsPending(true)
     const res = await deleteCliente(cliente.id)
     setIsPending(false)
@@ -213,14 +212,22 @@ function ActionButtons({ cliente }: { cliente: Cliente }) {
       >
         <Edit className="h-4 w-4" />
       </Link>
-      <button
-        onClick={handleDelete}
-        disabled={isPending}
-        title="Excluir cliente"
-        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors disabled:opacity-40"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+      <ConfirmModal
+        title="Excluir Cliente"
+        description={`Tem certeza que deseja excluir o cliente "${cliente.nome}"? Esta ação não pode ser desfeita.`}
+        variant="danger"
+        confirmText="Excluir"
+        onConfirm={handleDelete}
+        trigger={
+          <button
+            disabled={isPending}
+            title="Excluir cliente"
+            className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors disabled:opacity-40"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        }
+      />
     </div>
   )
 }

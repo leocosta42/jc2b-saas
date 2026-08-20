@@ -62,7 +62,7 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
           .eq('ativo', true)
           
         if (q) {
-          query = query.or(`nome.ilike.%${q}%,documento.ilike.%${q}%,cnpj_cpf.ilike.%${q}%`)
+          query = query.or(`nome.ilike.%${q}%,cnpj_cpf.ilike.%${q}%`)
         }
         
         const { data: testData, error: testError, count } = await query

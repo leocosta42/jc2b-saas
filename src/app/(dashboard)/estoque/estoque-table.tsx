@@ -12,21 +12,20 @@ import {
 import { MoreHorizontal, ArrowUpDown, Search, Edit, Trash2, Copy } from "lucide-react"
 import Link from "next/link"
 import { deleteProduto } from '@/app/actions/produtos'
+import { ConfirmModal } from "@/app/components/ConfirmModal"
 import { toast } from "sonner"
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
 const ActionCell = ({ row }: { row: any }) => {
   const [isDeleting, setIsDeleting] = useState(false)
   const handleDelete = async () => {
-    if (confirm("Tem certeza que deseja excluir este produto?")) {
-      setIsDeleting(true)
-      const res = await deleteProduto(row.original.id)
-      setIsDeleting(false)
-      if (res.error) {
-        toast.error("Erro ao excluir produto", { description: res.error })
-      } else {
-        toast.success(`Produto "${row.original.descricao}" excluído com sucesso.`)
-      }
+    setIsDeleting(true)
+    const res = await deleteProduto(row.original.id)
+    setIsDeleting(false)
+    if (res.error) {
+      toast.error("Erro ao excluir produto", { description: res.error })
+    } else {
+      toast.success(`Produto "${row.original.descricao}" excluído com sucesso.`)
     }
   }
 
@@ -46,14 +45,22 @@ const ActionCell = ({ row }: { row: any }) => {
       >
         <Edit className="h-4 w-4" />
       </Link>
-      <button 
-        onClick={handleDelete}
-        disabled={isDeleting}
+      <ConfirmModal
         title="Excluir Produto"
-        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+        description={`Tem certeza que deseja excluir o produto ${row.original.descricao}? Esta ação não pode ser desfeita.`}
+        variant="danger"
+        confirmText="Excluir"
+        onConfirm={handleDelete}
+        trigger={
+          <button 
+            disabled={isDeleting}
+            title="Excluir Produto"
+            className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        }
+      />
     </div>
   )
 }

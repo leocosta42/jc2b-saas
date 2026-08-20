@@ -12,6 +12,8 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2, Printer, Trash2 } from "lucide-react"
 import { convertToPedido, deleteDocumento } from "@/app/actions/vendas"
+import { convertToPedido, deleteDocumento } from "@/app/actions/vendas"
+import { ConfirmModal } from "@/app/components/ConfirmModal"
 import Link from "next/link"
 import { toast } from "sonner"
 
@@ -37,8 +39,6 @@ const ActionCell = ({ row }: { row: any }) => {
   const [isPending, setIsPending] = useState(false)
 
   const handleAprovar = async () => {
-    if (!confirm("Tem certeza que deseja aprovar este orçamento? O estoque dos itens será baixado e ele se tornará um pedido.")) return
-    
     setIsPending(true)
     const res = await convertToPedido(p.id)
     setIsPending(false)
@@ -56,8 +56,6 @@ const ActionCell = ({ row }: { row: any }) => {
   }
 
   const handleDelete = async () => {
-    if(!confirm(`Tem certeza que deseja excluir este ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}?`)) return
-    
     setIsPending(true)
     const res = await deleteDocumento(p.id, p.tipo as 'ORCAMENTO' | 'PEDIDO')
     setIsPending(false)
@@ -92,15 +90,23 @@ const ActionCell = ({ row }: { row: any }) => {
   return (
     <div className="flex justify-end gap-1.5">
       {p.tipo === 'ORCAMENTO' && (
-        <button 
-          onClick={handleAprovar}
-          disabled={isPending}
+        <ConfirmModal
           title="Aprovar Orçamento"
-          className="h-8 flex items-center gap-1 px-2 rounded-md bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50"
-        >
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          <span className="text-xs font-semibold hidden xl:inline">Aprovar</span>
-        </button>
+          description="Tem certeza que deseja aprovar este orçamento? O estoque dos itens será baixado e ele se tornará um pedido."
+          variant="success"
+          confirmText="Aprovar"
+          onConfirm={handleAprovar}
+          trigger={
+            <button 
+              disabled={isPending}
+              title="Aprovar Orçamento"
+              className="h-8 flex items-center gap-1 px-2 rounded-md bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50"
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              <span className="text-xs font-semibold hidden xl:inline">Aprovar</span>
+            </button>
+          }
+        />
       )}
       <button 
         onClick={handleWhatsApp}
@@ -133,14 +139,22 @@ const ActionCell = ({ row }: { row: any }) => {
       >
         <Edit className="h-4 w-4" />
       </Link>
-      <button 
-        onClick={handleDelete}
-        disabled={isPending}
-        className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
-        title="Excluir"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+      <ConfirmModal
+        title={`Excluir ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}`}
+        description={`Tem certeza que deseja excluir este ${p.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}? Esta ação não pode ser desfeita.`}
+        variant="danger"
+        confirmText="Excluir"
+        onConfirm={handleDelete}
+        trigger={
+          <button 
+            disabled={isPending}
+            className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
+            title="Excluir"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        }
+      />
     </div>
   )
 }
