@@ -29,12 +29,14 @@ export async function simularMelhorEnvio(cepOrigem: string, cepDestino: string, 
     const payload = {
       from: { postal_code: cepOrigem.replace(/\D/g, '') },
       to: { postal_code: cepDestino.replace(/\D/g, '') },
-      package: {
-        weight: pesoKg || 1,
-        width: 20, // Dimensões padrões mínimas (pois ainda não temos isso no cad. produto)
-        height: 20,
-        length: 20
-      },
+      volumes: [
+        {
+          weight: pesoKg || 1,
+          width: 20, // Dimensões padrões mínimas
+          height: 20,
+          length: 20
+        }
+      ],
       options: {
         insurance_value: valorSeguro || 0,
         receipt: false,
@@ -60,7 +62,11 @@ export async function simularMelhorEnvio(cepOrigem: string, cepDestino: string, 
       let errorDetail = errText
       try {
         const errJson = JSON.parse(errText)
-        errorDetail = errJson.message || errJson.error || errText
+        if (errJson.errors) {
+          errorDetail = JSON.stringify(errJson.errors)
+        } else {
+          errorDetail = errJson.message || errJson.error || errText
+        }
       } catch (e) {}
 
       return { error: `Falha na API: ${errorDetail}` }
