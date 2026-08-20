@@ -57,6 +57,7 @@ export default async function ClientesPage() {
         status: "Ativo"
       }))
       }
+      }
     }
   } catch (e) {
     console.warn("Supabase não configurado ou erro ao buscar clientes. Usando mock data.", e)

@@ -62,6 +62,7 @@ export default async function FornecedoresPage() {
         status: "Ativo"
       }))
       }
+      }
     }
   } catch (e) {
     console.warn("Supabase não configurado ou erro ao buscar fornecedores. Usando mock data.", e)
