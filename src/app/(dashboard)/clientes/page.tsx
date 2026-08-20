@@ -80,7 +80,8 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
         email: d.email || "-",
         cidade: d.cidade || "-",
         estado: d.estado || "-",
-        status: "Ativo"
+        status: "Ativo",
+        bloqueado: d.bloqueado || false
       }))
       }
       }

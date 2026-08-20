@@ -81,7 +81,8 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
         cnpj_cpf: d.cnpj_cpf || d.documento || "-", // Adapt to whatever we mapped in schema
         telefone: d.telefone || "-",
         email: d.email || "-",
-        status: "Ativo"
+        status: "Ativo",
+        bloqueado: d.bloqueado || false
       }))
       }
       }

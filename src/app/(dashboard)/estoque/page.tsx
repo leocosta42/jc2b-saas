@@ -96,7 +96,8 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
         saldo_estoque: d.quantidade_estoque || 0,
         custo_estoque_atual: 0,
         fornecedor: "Não informado",
-        cod_forn: "N/A"
+        cod_forn: "N/A",
+        bloqueado: d.bloqueado || false
       }))
         }
       }
