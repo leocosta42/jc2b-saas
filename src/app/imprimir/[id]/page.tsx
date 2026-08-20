@@ -1,6 +1,7 @@
 import { getDocumentoCompleto } from "@/app/actions/imprimir"
 import { getTenantConfig } from "@/app/actions/configuracoes"
 import { notFound } from "next/navigation"
+import { PrintActions } from "./print-actions"
 
 export default async function ImprimirPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -85,20 +86,12 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         }
       `}} />
       
-      {/* Botão de impressão (não aparece no PDF/impressão final) */}
-      <div className="max-w-[800px] mx-auto mb-4 print:hidden text-right">
-        <button 
-          id="btn-print"
-          className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700"
-          dangerouslySetInnerHTML={{ __html: '&#128424; Imprimir / Salvar PDF' }}
-        />
-        <button 
-          id="btn-close"
-          className="ml-2 bg-gray-300 text-black px-6 py-2 rounded shadow hover:bg-gray-400"
-        >
-          Fechar
-        </button>
-      </div>
+      <PrintActions 
+        id={id} 
+        numero={numero.toString()} 
+        tipo={tipo} 
+        celular={cliente.celular} 
+      />
 
       <div className="max-w-[800px] mx-auto bg-white border border-gray-300 print:border-none p-8 relative shadow-lg print:shadow-none">
         
