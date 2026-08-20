@@ -12,7 +12,6 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown, Search, Download, Edit, CheckCircle2, Loader2, Printer, Trash2 } from "lucide-react"
 import { convertToPedido, deleteDocumento } from "@/app/actions/vendas"
-import { convertToPedido, deleteDocumento } from "@/app/actions/vendas"
 import { ConfirmModal } from "@/app/components/ConfirmModal"
 import Link from "next/link"
 import { toast } from "sonner"
