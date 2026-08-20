@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { createDocumento, updateDocumento } from "@/app/actions/vendas"
 import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2, Search } from "lucide-react"
 import Link from "next/link"
+import { toast } from "sonner"
 
 interface Props {
   tipo: 'ORCAMENTO' | 'PEDIDO'
@@ -99,8 +100,23 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
     e.preventDefault()
 
     // Validações básicas
-    if (!clienteId) return alert("Selecione um cliente")
-    if (itens.some((i: any) => !i.produto_id)) return alert("Selecione os produtos para todos os itens")
+    if (!clienteId) return toast.error("Selecione um cliente")
+    if (itens.some((i: any) => !i.produto_id)) return toast.error("Selecione os produtos para todos os itens")
+
+    // Validação de Estoque Apenas para PEDIDOS
+    if (tipo === 'PEDIDO') {
+      for (const item of itens) {
+        const prod = dadosForm.produtos.find(p => p.id === item.produto_id);
+        if (prod) {
+          const saldoAtual = prod.quantidade_estoque || 0;
+          if (saldoAtual < Number(item.quantidade)) {
+            return toast.error("Estoque Insuficiente", {
+              description: `O produto "${prod.nome}" possui apenas ${saldoAtual} unid. Você tentou vender ${item.quantidade}.`
+            });
+          }
+        }
+      }
+    }
 
     startTransition(async () => {
       const docData = {
@@ -128,7 +144,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
       }
 
       if (res.error) {
-        alert(res.error)
+        toast.error("Erro ao salvar", { description: res.error })
       } else {
         router.push(tipo === 'ORCAMENTO' ? '/orcamentos' : '/pedidos')
         router.refresh()
@@ -256,6 +272,9 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                                   if (p) {
                                     handleProdutoChange(index, p.id);
                                     updateItem(index, 'produto_nome', p.nome);
+                                    if (tipo === 'PEDIDO' && (p.quantidade_estoque || 0) <= 0) {
+                                      toast.warning(`Atenção: O produto ${p.nome} está sem estoque!`);
+                                    }
                                   } else {
                                     updateItem(index, 'produto_id', '');
                                     updateItem(index, 'produto_nome', '');
@@ -271,6 +290,9 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                                 if (p) {
                                   handleProdutoChange(index, p.id);
                                   updateItem(index, 'produto_nome', p.nome);
+                                  if (tipo === 'PEDIDO' && (p.quantidade_estoque || 0) <= 0) {
+                                    toast.warning(`Atenção: O produto ${p.nome} está sem estoque!`);
+                                  }
                                 } else {
                                   updateItem(index, 'produto_id', '');
                                   updateItem(index, 'produto_nome', '');
@@ -442,6 +464,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   <tr>
                     <th className="px-4 py-2 w-48 font-medium">Código</th>
                     <th className="px-4 py-2 font-medium">Descrição</th>
+                    <th className="px-4 py-2 w-24 text-center font-medium">Estoque</th>
                     <th className="px-4 py-2 w-32 text-right font-medium">Preço</th>
                   </tr>
                 </thead>
@@ -456,6 +479,10 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                           if (modalProdutoOpen.index !== null) {
                             handleProdutoChange(modalProdutoOpen.index, p.id)
                             updateItem(modalProdutoOpen.index, 'produto_nome', p.nome)
+
+                            if (tipo === 'PEDIDO' && (p.quantidade_estoque || 0) <= 0) {
+                              toast.warning(`Atenção: O produto ${p.nome} está sem estoque!`);
+                            }
                           }
                           setModalProdutoOpen({isOpen: false, index: null})
                           setBuscaModal("")
@@ -463,6 +490,15 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                       >
                         <td className="px-4 py-2 font-medium">{p.sku || '-'}</td>
                         <td className="px-4 py-2 group-hover:font-medium">{p.nome}</td>
+                        <td className="px-4 py-2 text-center">
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                            (p.quantidade_estoque || 0) <= 0 
+                              ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
+                              : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                          }`}>
+                            {p.quantidade_estoque || 0}
+                          </span>
+                        </td>
                         <td className="px-4 py-2 text-right">
                           {(p.preco_venda || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </td>

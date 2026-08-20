@@ -42,7 +42,13 @@ const ActionCell = ({ row }: { row: any }) => {
     const res = await convertToPedido(p.id)
     setIsPending(false)
     if (res.error) {
-      toast.error("Erro ao aprovar", { description: res.error })
+      if (res.error.includes("Estoque insuficiente!")) {
+        toast.error("Estoque Insuficiente", { 
+          description: res.error.replace("Estoque insuficiente! ", "") 
+        })
+      } else {
+        toast.error("Erro ao aprovar", { description: res.error })
+      }
     } else {
       toast.success("Orçamento aprovado! Pedido gerado com sucesso.")
     }
