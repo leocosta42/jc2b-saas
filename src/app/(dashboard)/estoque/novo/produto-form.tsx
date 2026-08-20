@@ -1,6 +1,6 @@
 'use client'
 
-import { Save, ArrowLeft, Package, Box, DollarSign, Loader2 } from 'lucide-react'
+import { Save, ArrowLeft, Package, Box, DollarSign, Loader2, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
@@ -23,6 +23,8 @@ export function ProdutoForm({
   const [isPending, startTransition] = useTransition()
 
   const [codigo, setCodigo] = useState(isEdit ? (produtoCopiar?.sku || nextSku) : (produtoCopiar ? nextSku : nextSku))
+  const [umValue, setUmValue] = useState(produtoCopiar?.um || "UN")
+  const [modalUmOpen, setModalUmOpen] = useState(false)
   const [custo, setCusto] = useState(produtoCopiar?.preco_custo || 0)
   const [venda, setVenda] = useState(produtoCopiar?.preco_venda || 0)
 
@@ -87,7 +89,24 @@ export function ProdutoForm({
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">U.M (Unid. de Medida)</label>
-            <input name="um" type="text" defaultValue={produtoCopiar?.descricao || "UN"} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="UN, CX, KG..." />
+            <div className="relative">
+              <input 
+                name="um" 
+                type="text" 
+                value={umValue}
+                onChange={(e) => setUmValue(e.target.value.toUpperCase())}
+                className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-3 pr-10 py-2 text-sm uppercase focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" 
+                placeholder="UN, CX, KG..." 
+              />
+              <button 
+                type="button"
+                onClick={() => setModalUmOpen(true)}
+                className="absolute right-2 top-2 h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-indigo-500 transition-colors"
+                title="Consultar U.M"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">NCM Fiscal</label>
@@ -172,6 +191,48 @@ export function ProdutoForm({
           </button>
         </div>
       </form>
+
+      {/* Modal U.M */}
+      {modalUmOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-background rounded-lg shadow-2xl w-full max-w-sm border border-border flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Search className="h-5 w-5 text-indigo-500" />
+                Selecione a U.M
+              </h2>
+              <button onClick={() => setModalUmOpen(false)} className="text-muted-foreground hover:text-foreground">
+                ✕
+              </button>
+            </div>
+            <div className="p-2 grid grid-cols-2 gap-2 bg-background">
+              {[
+                { sigla: "UN", desc: "Unidade" },
+                { sigla: "CX", desc: "Caixa" },
+                { sigla: "PC", desc: "Peça" },
+                { sigla: "KG", desc: "Quilograma" },
+                { sigla: "M", desc: "Metro" },
+                { sigla: "LT", desc: "Litro" },
+                { sigla: "PAR", desc: "Par" },
+                { sigla: "RL", desc: "Rolo" }
+              ].map(um => (
+                <button
+                  key={um.sigla}
+                  type="button"
+                  onClick={() => {
+                    setUmValue(um.sigla)
+                    setModalUmOpen(false)
+                  }}
+                  className="flex flex-col items-center justify-center p-3 border border-border/50 rounded-lg hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all group"
+                >
+                  <span className="font-bold text-lg">{um.sigla}</span>
+                  <span className="text-xs text-muted-foreground group-hover:text-white/70">{um.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
