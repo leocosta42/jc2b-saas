@@ -527,7 +527,8 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                           return toast.error("O cliente selecionado não possui CEP cadastrado!")
                         }
                         setLoadingFrete(true)
-                        const res = await simularMelhorEnvio("13400000", clienteSelecionado.cep, totalPeso, subtotalTotal)
+                        // TODO: No futuro, buscar o CEP da filial dinamicamente (13400820 é um CEP válido de Piracicaba)
+                        const res = await simularMelhorEnvio("13400820", clienteSelecionado.cep, totalPeso, subtotalTotal)
                         setLoadingFrete(false)
                         if (res.error) {
                           toast.error(res.error)
