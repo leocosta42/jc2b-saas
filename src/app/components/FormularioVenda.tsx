@@ -525,12 +525,12 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                 {/* Dimensões */}
                 <div className="py-2 border-t border-border/50 space-y-2">
                   <span className="text-sm text-muted-foreground block">Dimensões da Caixa (C x L x A) cm</span>
-                  <div className="flex items-center gap-2">
-                    <input type="number" value={dimC} onChange={e => setDimC(Number(e.target.value) || 0)} className="flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Comprimento" />
+                  <div className="flex items-center gap-1">
+                    <input type="number" value={dimC} onChange={e => setDimC(Number(e.target.value) || 0)} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Comprimento" />
                     <span className="text-muted-foreground text-xs">x</span>
-                    <input type="number" value={dimL} onChange={e => setDimL(Number(e.target.value) || 0)} className="flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Largura" />
+                    <input type="number" value={dimL} onChange={e => setDimL(Number(e.target.value) || 0)} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Largura" />
                     <span className="text-muted-foreground text-xs">x</span>
-                    <input type="number" value={dimA} onChange={e => setDimA(Number(e.target.value) || 0)} className="flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Altura" />
+                    <input type="number" value={dimA} onChange={e => setDimA(Number(e.target.value) || 0)} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Altura" />
                   </div>
                 </div>
 
@@ -570,7 +570,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                         }
                       }}
                       disabled={loadingFrete || !clienteId || totalPeso <= 0}
-                      className="flex-1 h-8 text-xs bg-muted hover:bg-primary hover:text-white transition-colors px-2 py-1 rounded disabled:opacity-50"
+                      className="flex-1 h-8 text-xs bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground font-medium transition-colors px-2 rounded disabled:opacity-50 border border-primary/20"
                     >
                       {loadingFrete ? "Calculando..." : "Calcular Melhor Envio"}
                     </button>
@@ -580,7 +580,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                       step="0.01"
                       value={valorFrete || ""}
                       onChange={(e) => setValorFrete(Number(e.target.value) || 0)}
-                      className="w-24 h-8 rounded-md border border-input bg-background/50 px-2 text-right text-sm font-medium"
+                      className="min-w-0 w-24 h-8 rounded-md border border-input bg-background/50 px-2 text-right text-sm font-medium"
                       placeholder="R$ 0,00"
                     />
                   </div>
