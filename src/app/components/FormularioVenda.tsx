@@ -14,6 +14,7 @@ interface Props {
     clientes: any[]
     vendedores: any[]
     produtos: any[]
+    tenant_cep?: string
   }
   isEdit?: boolean
   pedidoEdit?: any
