@@ -39,8 +39,63 @@ export default async function EstatisticasPage() {
     })
   }
 
-  // Estatisticas para a tabela (mocks por enquanto pois envolve join complexo com itens_pedido que deixaremos para depois)
-  const mockEstatisticas: Estatistica[] = []
+  // 3. Gerar a Base de Estatísticas Detalhada (100 ultimos itens vendidos)
+  const { data: itensVendidos } = await supabase
+    .from('itens_pedido')
+    .select(`
+      id,
+      quantidade,
+      preco_unitario,
+      unidade_medida,
+      subtotal,
+      pedidos!inner (
+        numero_pedido,
+        data_emissao,
+        status,
+        clientes ( codigo, nome ),
+        vendedores ( nome )
+      ),
+      produtos!inner (
+        sku,
+        nome,
+        preco_custo
+      )
+    `)
+    .neq('pedidos.status', 'Cancelado')
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  const realEstatisticas: Estatistica[] = (itensVendidos || []).map((item, index) => {
+    const pedido: any = Array.isArray(item.pedidos) ? item.pedidos[0] : item.pedidos;
+    const produto: any = Array.isArray(item.produtos) ? item.produtos[0] : item.produtos;
+    const cliente: any = pedido?.clientes ? (Array.isArray(pedido.clientes) ? pedido.clientes[0] : pedido.clientes) : null;
+    const vendedor: any = pedido?.vendedores ? (Array.isArray(pedido.vendedores) ? pedido.vendedores[0] : pedido.vendedores) : null;
+
+    const dataObj = pedido?.data_emissao ? new Date(pedido.data_emissao) : new Date();
+    const mes = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+    const valorTotal = Number(item.subtotal) || (Number(item.quantidade) * Number(item.preco_unitario));
+    const custoUnitario = Number(produto?.preco_custo) || 0;
+    const lucro = valorTotal - (custoUnitario * Number(item.quantidade));
+
+    return {
+      id: item.id,
+      cod_cliente: cliente?.codigo || '-',
+      mes: mes,
+      nome: cliente?.nome || 'Não Informado',
+      pedido: pedido?.numero_pedido?.toString() || '-',
+      data_emissao: dataObj.toLocaleDateString('pt-BR'),
+      item: (index + 1).toString(),
+      codigo_produto: produto?.sku || '-',
+      descricao: produto?.nome || '-',
+      qtde: item.quantidade,
+      um: item.unidade_medida || 'UN',
+      valor_unit: item.preco_unitario,
+      valor_total: valorTotal,
+      valor_custo: custoUnitario,
+      lucro_venda: lucro,
+      identificador: vendedor?.nome || '-'
+    }
+  });
 
   return (
     <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 min-h-screen">
@@ -118,7 +173,7 @@ export default async function EstatisticasPage() {
       </div>
 
       <div className="mt-8">
-        <EstatisticasTable data={mockEstatisticas} />
+        <EstatisticasTable data={realEstatisticas} />
       </div>
     </div>
   )
