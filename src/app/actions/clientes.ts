@@ -41,7 +41,7 @@ export async function createCliente(formData: FormData) {
     if (!validatedData.success) {
       return { error: validatedData.error.issues[0].message };
     }
-    const { nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
+    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
 
     // Validar CPF/CNPJ duplicado
     if (documento) {
@@ -115,7 +115,7 @@ export async function updateCliente(id: string, formData: FormData) {
     if (!validatedData.success) {
       return { error: validatedData.error.issues[0].message };
     }
-    const { nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
+    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado } = validatedData.data;
 
     // Validar CPF/CNPJ duplicado em OUTRO cliente
     if (documento) {
@@ -134,7 +134,7 @@ export async function updateCliente(id: string, formData: FormData) {
 
     const { error } = await supabase
       .from('clientes')
-      .update({ codigo: rawData.codigo, nome, cpf_cnpj: documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado })
+      .update({ codigo, nome, cpf_cnpj: documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado })
       .eq('id', id)
       .eq('tenant_id', tenantId)
 

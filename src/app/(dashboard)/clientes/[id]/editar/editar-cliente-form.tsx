@@ -9,6 +9,7 @@ import { useTransition, useState } from "react"
 interface Props {
   cliente: {
     id: string
+    codigo?: string
     nome: string
     cpf_cnpj?: string
     celular?: string
@@ -105,6 +106,10 @@ export function EditarClienteForm({ cliente }: Props) {
                 </h3>
               </div>
               <div className="p-6 grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <label htmlFor="codigo" className="text-sm font-medium leading-none">Código do Cliente</label>
+                  <input id="codigo" name="codigo" defaultValue={cliente.codigo || ""} placeholder="Ex: CLI0001" className={inputClass} />
+                </div>
                 <div className="space-y-2 md:col-span-2">
                   <label htmlFor="nome" className="text-sm font-medium leading-none">Nome / Razão Social <span className="text-red-500">*</span></label>
                   <input id="nome" name="nome" defaultValue={cliente.nome} placeholder="Nome Completo ou Razão Social" className={inputClass} required />

@@ -13,6 +13,7 @@ export const addressSchema = z.object({
 
 // Validação de Cliente
 export const clienteSchema = addressSchema.extend({
+  codigo: z.string().optional(),
   nome: z.string().min(2, "O nome deve ter no mínimo 2 caracteres"),
   documento: z.string().optional(),
   celular: z.string().optional(),
