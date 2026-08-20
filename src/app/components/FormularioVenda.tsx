@@ -3,7 +3,8 @@
 import { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createDocumento, updateDocumento } from "@/app/actions/vendas"
-import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2, Search } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2, Search, Truck } from "lucide-react"
+import { simularMelhorEnvio } from "@/app/actions/frete"
 import Link from "next/link"
 import { toast } from "sonner"
 
@@ -37,6 +38,12 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   // Totals & Footers
   const [formaPagamento, setFormaPagamento] = useState(pedidoEdit?.forma_pagamento || "")
   const [observacoes, setObservacoes] = useState(pedidoEdit?.observacoes || "")
+  const [valorFrete, setValorFrete] = useState<number>(Number(pedidoEdit?.valor_frete) || 0)
+  
+  // Frete UI
+  const [modalFreteOpen, setModalFreteOpen] = useState(false)
+  const [loadingFrete, setLoadingFrete] = useState(false)
+  const [freteOpcoes, setFreteOpcoes] = useState<any[]>([])
 
   // Itens
   const [itens, setItens] = useState(() => {
@@ -96,6 +103,17 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
     return acc + (preco - desc)
   }, 0)
 
+  const descontoTotal = itens.reduce((acc: number, item: any) => {
+    const precoBruto = Number(item.preco_unitario) * Number(item.quantidade)
+    const precoLiquido = precoBruto * (1 - (Number(item.desconto_percentual)/100))
+    return acc + (precoBruto - precoLiquido)
+  }, 0)
+
+  const totalPeso = itens.reduce((acc: number, item: any) => {
+    const p = dadosForm.produtos.find(prod => prod.id === item.produto_id)
+    return acc + ((Number(p?.peso) || 0) * (Number(item.quantidade) || 0))
+  }, 0)
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -127,6 +145,8 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         data_entrega: dataEntrega,
         forma_pagamento: formaPagamento,
         observacoes,
+        valor_frete: Number(valorFrete),
+        desconto_total: descontoTotal,
         itens: itens.map((i: any) => ({
           produto_id: i.produto_id,
           quantidade: Number(i.quantidade),
@@ -242,6 +262,8 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                     <th className="px-4 py-3 min-w-[60px] w-10">Item</th>
                     <th className="px-4 py-3 min-w-[160px] w-40">Produto</th>
                     <th className="px-4 py-3 min-w-[250px]">Descrição</th>
+                    <th className="px-4 py-3 min-w-[100px] w-24">NCM</th>
+                    <th className="px-4 py-3 min-w-[80px] w-20">Peso</th>
                     <th className="px-4 py-3 min-w-[80px] w-20">U.M</th>
                     <th className="px-4 py-3 min-w-[100px] w-24">Qtde</th>
                     <th className="px-4 py-3 min-w-[120px] w-32">V. Unit (R$)</th>
@@ -253,6 +275,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                 <tbody className="divide-y divide-border/50">
                   {itens.map((item: any, index: number) => {
                     const sub = (Number(item.quantidade) * Number(item.preco_unitario)) * (1 - (Number(item.desconto_percentual)/100))
+                    const pData = dadosForm.produtos.find(p => p.id === item.produto_id)
                     
                     return (
                       <tr key={item.id} className="hover:bg-muted/20">
@@ -316,6 +339,12 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                           <div className="w-full min-h-8 px-2 py-1.5 text-sm text-foreground truncate select-none">
                             {item.produto_nome || <span className="text-muted-foreground/50 italic">Selecione...</span>}
                           </div>
+                        </td>
+                        <td className="px-4 py-2 text-center text-xs text-muted-foreground">
+                          {pData?.ncm || '-'}
+                        </td>
+                        <td className="px-4 py-2 text-center text-xs text-muted-foreground">
+                          {pData?.peso ? `${pData.peso} kg` : '-'}
                         </td>
                         <td className="px-4 py-2">
                           <input type="text" value={item.unidade_medida} onChange={(e) => updateItem(index, 'unidade_medida', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-center" />
@@ -411,10 +440,57 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   <span className="text-muted-foreground">Qtd. Total</span>
                   <span className="font-medium">{totalQtde}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Peso Total (kg)</span>
+                  <span className="font-medium">
+                    {itens.reduce((acc: number, item: any) => {
+                      const p = dadosForm.produtos.find(prod => prod.id === item.produto_id);
+                      return acc + ((Number(p?.peso) || 0) * (Number(item.quantidade) || 0));
+                    }, 0).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-t border-border/50 text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Truck className="h-4 w-4" />
+                    Frete
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button"
+                      onClick={async () => {
+                        if (!clienteSelecionado?.cep) {
+                          return toast.error("O cliente selecionado não possui CEP cadastrado!")
+                        }
+                        setLoadingFrete(true)
+                        const res = await simularMelhorEnvio("13400000", clienteSelecionado.cep, totalPeso, subtotalTotal)
+                        setLoadingFrete(false)
+                        if (res.error) {
+                          toast.error(res.error)
+                        } else {
+                          setFreteOpcoes(res.data || [])
+                          setModalFreteOpen(true)
+                        }
+                      }}
+                      disabled={loadingFrete || !clienteId || totalPeso <= 0}
+                      className="text-xs bg-muted hover:bg-primary hover:text-white transition-colors px-2 py-1 rounded disabled:opacity-50"
+                    >
+                      {loadingFrete ? "Calculando..." : "Calcular Melhor Envio"}
+                    </button>
+                    <input 
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={valorFrete || ""}
+                      onChange={(e) => setValorFrete(Number(e.target.value) || 0)}
+                      className="w-24 h-8 rounded-md border border-input bg-background/50 px-2 text-right text-sm"
+                      placeholder="R$ 0,00"
+                    />
+                  </div>
+                </div>
                 <div className="flex justify-between items-end pt-3 mt-3 border-t border-border/50">
                   <span className="text-base font-semibold">Total R$</span>
                   <span className={`text-2xl font-bold ${corTema}`}>
-                    {subtotalTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {(subtotalTotal + (valorFrete || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
                 </div>
               </div>
@@ -525,6 +601,54 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
           </div>
         </div>
       )}
+      {/* Modal Frete (Melhor Envio Simulador) */}
+      {modalFreteOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-background rounded-xl shadow-2xl w-full max-w-lg border border-border/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 bg-primary/10 border-b border-border/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="text-base font-semibold leading-none">Cotação de Frete</h2>
+                  <p className="text-xs text-muted-foreground mt-1">Motor Melhor Envio (Simulação)</p>
+                </div>
+              </div>
+              <button onClick={() => setModalFreteOpen(false)} className="text-muted-foreground hover:text-foreground">
+                ✕
+              </button>
+            </div>
+            <div className="p-4 grid gap-3 max-h-[60vh] overflow-y-auto bg-muted/10">
+              {freteOpcoes.map((opcao: any) => (
+                <div 
+                  key={opcao.id}
+                  onClick={() => {
+                    setValorFrete(opcao.price)
+                    setModalFreteOpen(false)
+                    toast.success(`Frete ${opcao.name} selecionado!`)
+                  }}
+                  className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-white rounded flex items-center justify-center p-1 shadow-sm border border-border/20">
+                      <img src={opcao.logo} alt={opcao.company} className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm group-hover:text-primary transition-colors">{opcao.name}</p>
+                      <p className="text-xs text-muted-foreground">Prazo: até {opcao.delivery_time} dias úteis</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg text-foreground">
+                      {opcao.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

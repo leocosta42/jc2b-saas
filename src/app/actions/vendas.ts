@@ -22,9 +22,9 @@ export async function getFormData() {
   if (!tenantId) return { clientes: [], vendedores: [], produtos: [] }
 
   const [clientesRes, vendedoresRes, produtosRes] = await Promise.all([
-    supabase.from('clientes').select('id, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, celular, email').eq('tenant_id', tenantId).order('nome'),
+    supabase.from('clientes').select('id, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email').eq('tenant_id', tenantId).order('nome'),
     supabase.from('vendedores').select('id, nome').eq('tenant_id', tenantId).order('nome'),
-    supabase.from('produtos').select('id, nome, sku, preco_venda, quantidade_estoque').eq('tenant_id', tenantId).order('nome')
+    supabase.from('produtos').select('id, nome, sku, preco_venda, quantidade_estoque, ncm, peso').eq('tenant_id', tenantId).order('nome')
   ])
 
   return {
@@ -39,9 +39,11 @@ export async function createDocumento(data: {
   cliente_id: string
   vendedor_id: string
   data_emissao: string
-  data_entrega: string
-  forma_pagamento: string
-  observacoes: string
+  data_entrega?: string
+  forma_pagamento?: string
+  observacoes?: string
+  valor_frete?: number
+  desconto_total?: number
   itens: Array<{
     produto_id: string
     quantidade: number
@@ -70,6 +72,8 @@ export async function createDocumento(data: {
         data_entrega: data.data_entrega || null,
         forma_pagamento: data.forma_pagamento,
         observacoes: data.observacoes,
+        valor_frete: data.valor_frete || 0,
+        desconto_total: data.desconto_total || 0,
         status: data.tipo === 'ORCAMENTO' ? 'Aberto' : 'Pendente'
       })
       .select('id')
@@ -226,7 +230,7 @@ export async function getPedidoCompletoById(id: string) {
   const { data: pedido } = await supabase
     .from('pedidos')
     .select(`
-      id, tipo, cliente_id, vendedor_id, data_emissao, data_entrega, forma_pagamento, observacoes, status,
+      id, tipo, cliente_id, vendedor_id, data_emissao, data_entrega, forma_pagamento, observacoes, status, valor_frete, desconto_total,
       itens_pedido (
         id, produto_id, quantidade, preco_unitario, desconto_percentual, unidade_medida,
         produtos ( sku, nome )
@@ -273,7 +277,9 @@ export async function updateDocumento(id: string, data: any) {
         data_emissao: data.data_emissao,
         data_entrega: data.data_entrega || null,
         forma_pagamento: data.forma_pagamento,
-        observacoes: data.observacoes
+        observacoes: data.observacoes,
+        valor_frete: data.valor_frete || 0,
+        desconto_total: data.desconto_total || 0
       })
       .eq('id', id)
 
