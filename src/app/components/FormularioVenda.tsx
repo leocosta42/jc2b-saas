@@ -62,6 +62,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
     return [{ id: Date.now(), produto_id: "", produto_sku: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }]
   })
   const [modalProdutoOpen, setModalProdutoOpen] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null})
+  const [modalUmOpen, setModalUmOpen] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null})
   const [buscaModal, setBuscaModal] = useState("")
 
   const [modalClienteOpen, setModalClienteOpen] = useState(false)
@@ -396,7 +397,22 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                           {pData?.peso ? `${pData.peso} kg` : '-'}
                         </td>
                         <td className="px-4 py-2">
-                          <input type="text" value={item.unidade_medida} onChange={(e) => updateItem(index, 'unidade_medida', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-center" />
+                          <div className="relative w-full">
+                            <input 
+                              type="text" 
+                              value={item.unidade_medida} 
+                              onChange={(e) => updateItem(index, 'unidade_medida', e.target.value.toUpperCase())} 
+                              className="w-full h-8 rounded border border-border/50 bg-background pl-2 pr-7 text-center uppercase text-sm" 
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => setModalUmOpen({isOpen: true, index})}
+                              className="absolute right-1 top-1 h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                              title="Consultar U.M"
+                            >
+                              <Search className="h-3 w-3" />
+                            </button>
+                          </div>
                         </td>
                         <td className="px-4 py-2">
                           <input type="number" min="1" value={item.quantidade} onChange={(e) => updateItem(index, 'quantidade', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-center" />
@@ -729,6 +745,51 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
           </div>
         </div>
       )}
+
+      {/* Modal U.M */}
+      {modalUmOpen.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-background rounded-lg shadow-2xl w-full max-w-sm border border-border flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" />
+                Selecione a U.M
+              </h2>
+              <button onClick={() => setModalUmOpen({isOpen: false, index: null})} className="text-muted-foreground hover:text-foreground">
+                ✕
+              </button>
+            </div>
+            <div className="p-2 grid grid-cols-2 gap-2 bg-background">
+              {[
+                { sigla: "UN", desc: "Unidade" },
+                { sigla: "CX", desc: "Caixa" },
+                { sigla: "PC", desc: "Peça" },
+                { sigla: "KG", desc: "Quilograma" },
+                { sigla: "M", desc: "Metro" },
+                { sigla: "LT", desc: "Litro" },
+                { sigla: "PAR", desc: "Par" },
+                { sigla: "RL", desc: "Rolo" }
+              ].map(um => (
+                <button
+                  key={um.sigla}
+                  type="button"
+                  onClick={() => {
+                    if (modalUmOpen.index !== null) {
+                      updateItem(modalUmOpen.index, 'unidade_medida', um.sigla)
+                    }
+                    setModalUmOpen({isOpen: false, index: null})
+                  }}
+                  className="flex flex-col items-center justify-center p-3 border border-border/50 rounded-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all group"
+                >
+                  <span className="font-bold text-lg">{um.sigla}</span>
+                  <span className="text-xs text-muted-foreground group-hover:text-primary-foreground/70">{um.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Frete (Melhor Envio Simulador) */}
       {modalFreteOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
