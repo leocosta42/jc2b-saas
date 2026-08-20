@@ -40,6 +40,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   const [formaPagamento, setFormaPagamento] = useState(pedidoEdit?.forma_pagamento || "")
   const [observacoes, setObservacoes] = useState(pedidoEdit?.observacoes || "")
   const [valorFrete, setValorFrete] = useState<number>(Number(pedidoEdit?.valor_frete) || 0)
+  const [tipoFrete, setTipoFrete] = useState(pedidoEdit?.tipo_frete || "CIF")
   
   // Frete UI
   const [modalFreteOpen, setModalFreteOpen] = useState(false)
@@ -160,6 +161,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         forma_pagamento: formaPagamento,
         observacoes,
         valor_frete: Number(valorFrete),
+        tipo_frete: tipoFrete,
         desconto_total: descontoTotal,
         itens: itens.map((i: any) => ({
           produto_id: i.produto_id,
@@ -536,6 +538,14 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                     Frete
                   </span>
                   <div className="flex items-center gap-2">
+                    <select 
+                      value={tipoFrete}
+                      onChange={(e) => setTipoFrete(e.target.value)}
+                      className="h-8 rounded-md border border-input bg-background/50 px-2 text-xs"
+                    >
+                      <option value="CIF">CIF (Emitente)</option>
+                      <option value="FOB">FOB (Destinatário)</option>
+                    </select>
                     <button 
                       type="button"
                       onClick={async () => {

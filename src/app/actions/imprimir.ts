@@ -21,6 +21,7 @@ export async function getDocumentoCompleto(id: string) {
       forma_pagamento,
       observacoes,
       valor_frete,
+      tipo_frete,
       desconto_total,
       clientes (
         codigo, nome, cpf_cnpj, rua, numero, complemento, bairro, cidade, estado, cep, celular, email

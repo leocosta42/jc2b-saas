@@ -45,6 +45,7 @@ export async function createDocumento(data: {
   forma_pagamento?: string
   observacoes?: string
   valor_frete?: number
+  tipo_frete?: string
   desconto_total?: number
   itens: Array<{
     produto_id: string
@@ -75,6 +76,7 @@ export async function createDocumento(data: {
         forma_pagamento: data.forma_pagamento,
         observacoes: data.observacoes,
         valor_frete: data.valor_frete || 0,
+        tipo_frete: data.tipo_frete || 'CIF',
         desconto_total: data.desconto_total || 0,
         status: data.tipo === 'ORCAMENTO' ? 'Aberto' : 'Pendente'
       })
