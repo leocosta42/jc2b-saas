@@ -204,7 +204,7 @@ export async function deleteVendedor(id: string) {
 
     const { error } = await supabase
       .from('vendedores')
-      .delete()
+      .update({ ativo: false })
       .eq('id', id)
       .eq('tenant_id', profile.tenant_id)
 

@@ -158,7 +158,7 @@ export async function deleteCliente(id: string) {
 
     const { error } = await supabase
       .from('clientes')
-      .delete()
+      .update({ ativo: false })
       .eq('id', id)
       .eq('tenant_id', tenantId)
 

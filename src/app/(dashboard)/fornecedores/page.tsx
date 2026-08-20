@@ -38,13 +38,20 @@ export default async function FornecedoresPage() {
 
   try {
     const supabase = await createClient()
+    const { data: authData } = await supabase.auth.getUser()
     
-    const { data: testData, error: testError } = await supabase
-      .from('fornecedores')
-      .select('*')
-      .limit(50)
+    if (authData?.user) {
+      const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
       
-    if (!testError && testData && testData.length > 0) {
+      if (profile?.tenant_id) {
+        const { data: testData, error: testError } = await supabase
+          .from('fornecedores')
+          .select('*')
+          .eq('tenant_id', profile.tenant_id)
+          .eq('ativo', true)
+          .limit(50)
+          
+        if (!testError && testData && testData.length > 0) {
       fornecedores = testData.map(d => ({
         id: d.id,
         codigo: d.codigo || "-",
@@ -54,6 +61,7 @@ export default async function FornecedoresPage() {
         email: d.email || "-",
         status: "Ativo"
       }))
+      }
     }
   } catch (e) {
     console.warn("Supabase não configurado ou erro ao buscar fornecedores. Usando mock data.", e)

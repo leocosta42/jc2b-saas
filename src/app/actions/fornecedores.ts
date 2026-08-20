@@ -158,7 +158,7 @@ export async function deleteFornecedor(id: string) {
 
     const { error } = await supabase
       .from('fornecedores')
-      .delete()
+      .update({ ativo: false })
       .eq('id', id)
       .eq('tenant_id', tenantId)
 

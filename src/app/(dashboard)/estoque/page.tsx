@@ -39,14 +39,20 @@ export default async function EstoquePage() {
   
   try {
     const supabase = await createClient()
+    const { data: authData } = await supabase.auth.getUser()
     
-    // Conexão futura com Supabase, usando fallback por enquanto
-    const { data, error } = await supabase
-      .from('produtos')
-      .select('*')
-      .limit(50)
+    if (authData?.user) {
+      const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
       
-    if (!error && data && data.length > 0) {
+      if (profile?.tenant_id) {
+        const { data, error } = await supabase
+          .from('produtos')
+          .select('*')
+          .eq('tenant_id', profile.tenant_id)
+          .eq('ativo', true)
+          .limit(50)
+          
+        if (!error && data && data.length > 0) {
       produtos = data.map(d => ({
         id: d.id,
         codigo: d.sku || "N/A",
@@ -61,6 +67,8 @@ export default async function EstoquePage() {
         fornecedor: "Não informado",
         cod_forn: "N/A"
       }))
+        }
+      }
     }
   } catch (error) {
     console.warn("⚠️ Usando mock data para o estoque.")
