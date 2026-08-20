@@ -64,6 +64,13 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   const [modalProdutoOpen, setModalProdutoOpen] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null})
   const [buscaModal, setBuscaModal] = useState("")
 
+  const [modalClienteOpen, setModalClienteOpen] = useState(false)
+  const [buscaModalCliente, setBuscaModalCliente] = useState("")
+  const [inputClienteCodigo, setInputClienteCodigo] = useState(() => {
+    const c = dadosForm.clientes.find(cli => cli.id === pedidoEdit?.cliente_id)
+    return c?.codigo || ""
+  })
+
   const clienteSelecionado = dadosForm.clientes.find(c => c.id === clienteId)
 
   const handleProdutoChange = (index: number, produtoId: string) => {
@@ -222,17 +229,58 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
             <div className="p-4 grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <label className="text-sm font-medium">Cliente *</label>
-                <select 
-                  value={clienteId} 
-                  onChange={(e) => setClienteId(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50"
-                  required
-                >
-                  <option value="">Selecione um cliente...</option>
-                  {dadosForm.clientes.map(c => (
-                    <option key={c.id} value={c.id}>{c.nome} ({c.cpf_cnpj || 'Sem doc'})</option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <div className="relative w-32">
+                    <input 
+                      type="text"
+                      placeholder="Cód..."
+                      value={inputClienteCodigo}
+                      onChange={(e) => setInputClienteCodigo(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          const val = e.currentTarget.value
+                          if (!val) {
+                            setClienteId("")
+                            return
+                          }
+                          const c = dadosForm.clientes.find(cli => cli.codigo?.toLowerCase() === val.toLowerCase())
+                          if (c) {
+                            setClienteId(c.id)
+                            setInputClienteCodigo(c.codigo || "")
+                          } else {
+                            toast.error("Cliente não encontrado.")
+                            setClienteId("")
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value
+                        if (!val) {
+                          setClienteId("")
+                          return
+                        }
+                        const c = dadosForm.clientes.find(cli => cli.codigo?.toLowerCase() === val.toLowerCase())
+                        if (c) {
+                          setClienteId(c.id)
+                          setInputClienteCodigo(c.codigo || "")
+                        }
+                      }}
+                      className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 uppercase"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setModalClienteOpen(true)}
+                      className="absolute right-2 top-2 text-muted-foreground hover:text-primary transition-colors"
+                      title="Consultar Cliente"
+                    >
+                      <Search className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="flex-1 flex h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-foreground overflow-hidden whitespace-nowrap text-ellipsis">
+                    {clienteSelecionado ? `${clienteSelecionado.nome} (${clienteSelecionado.cpf_cnpj || 'Sem doc'})` : <span className="text-muted-foreground/50">Selecione um cliente...</span>}
+                  </div>
+                </div>
               </div>
               
               {clienteSelecionado && (
@@ -240,6 +288,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   <div><strong className="text-foreground">Doc:</strong> {clienteSelecionado.cpf_cnpj || '-'}</div>
                   <div><strong className="text-foreground">Contato:</strong> {clienteSelecionado.celular || '-'}</div>
                   <div><strong className="text-foreground">Email:</strong> {clienteSelecionado.email || '-'}</div>
+                  <div><strong className="text-foreground">CEP:</strong> {clienteSelecionado.cep || '-'}</div>
                   <div className="col-span-2"><strong className="text-foreground">Endereço:</strong> {clienteSelecionado.rua}, {clienteSelecionado.numero} - {clienteSelecionado.cidade}/{clienteSelecionado.estado}</div>
                 </div>
               )}
@@ -510,6 +559,85 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
 
         </div>
       </div>
+
+      {/* Modal Consulta Cliente */}
+      {modalClienteOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-background rounded-lg shadow-2xl w-full max-w-4xl border border-border flex flex-col h-[600px] max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" />
+                Consulta Padrão - Cliente
+              </h2>
+              <button onClick={() => setModalClienteOpen(false)} className="text-muted-foreground hover:text-foreground">
+                ✕
+              </button>
+            </div>
+            <div className="p-4 border-b border-border bg-muted/10">
+              <input 
+                type="text" 
+                placeholder="Buscar por código, nome ou CNPJ..." 
+                value={buscaModalCliente}
+                onChange={(e) => setBuscaModalCliente(e.target.value)}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 focus:ring-2 focus:ring-primary/50"
+                autoFocus
+              />
+            </div>
+            <div className="flex-1 overflow-auto p-0 bg-background">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 sticky top-0 shadow-sm">
+                  <tr>
+                    <th className="px-4 py-2 w-32 font-medium">Código</th>
+                    <th className="px-4 py-2 font-medium">Nome / Razão Social</th>
+                    <th className="px-4 py-2 w-48 font-medium">CPF/CNPJ</th>
+                    <th className="px-4 py-2 w-32 font-medium">Cidade/UF</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {dadosForm.clientes
+                    .filter(c => !buscaModalCliente || 
+                                (c.codigo?.toLowerCase() || '').includes(buscaModalCliente.toLowerCase()) || 
+                                c.nome.toLowerCase().includes(buscaModalCliente.toLowerCase()) || 
+                                (c.cpf_cnpj || '').includes(buscaModalCliente)
+                    )
+                    .map(c => (
+                      <tr 
+                        key={c.id} 
+                        className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors group"
+                        onClick={() => {
+                          setClienteId(c.id)
+                          setInputClienteCodigo(c.codigo || "")
+                          setModalClienteOpen(false)
+                          setBuscaModalCliente("")
+                        }}
+                      >
+                        <td className="px-4 py-2 font-medium">{c.codigo || '-'}</td>
+                        <td className="px-4 py-2 group-hover:font-medium">{c.nome}</td>
+                        <td className="px-4 py-2">{c.cpf_cnpj || '-'}</td>
+                        <td className="px-4 py-2">{c.cidade ? `${c.cidade}/${c.estado}` : '-'}</td>
+                      </tr>
+                    ))}
+                    {dadosForm.clientes.filter(c => !buscaModalCliente || (c.codigo?.toLowerCase() || '').includes(buscaModalCliente.toLowerCase()) || c.nome.toLowerCase().includes(buscaModalCliente.toLowerCase()) || (c.cpf_cnpj || '').includes(buscaModalCliente)).length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                          Nenhum cliente encontrado na consulta.
+                        </td>
+                      </tr>
+                    )}
+                </tbody>
+              </table>
+            </div>
+            <div className="p-4 border-t border-border flex justify-end bg-muted/30">
+              <button 
+                onClick={() => setModalClienteOpen(false)}
+                className="px-6 py-2 bg-background border border-border text-foreground rounded-md hover:bg-muted font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Consulta Produto (Estilo Protheus) */}
       {modalProdutoOpen.isOpen && (
