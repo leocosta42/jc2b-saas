@@ -56,7 +56,14 @@ export async function simularMelhorEnvio(cepOrigem: string, cepDestino: string, 
     if (!response.ok) {
       const errText = await response.text()
       console.error("Melhor Envio API Error:", errText)
-      return { error: "Falha ao consultar Melhor Envio. Verifique o Token ou CEPs." }
+      
+      let errorDetail = errText
+      try {
+        const errJson = JSON.parse(errText)
+        errorDetail = errJson.message || errJson.error || errText
+      } catch (e) {}
+
+      return { error: `Falha na API: ${errorDetail}` }
     }
 
     const result = await response.json()
