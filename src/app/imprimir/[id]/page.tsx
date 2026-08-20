@@ -28,15 +28,18 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
   // Cálculos de totais
   let qtdeTotal = 0
   let valorTotal = 0
+  let pesoTotal = 0
 
   const itensRender = itens.map((item: any, i: number) => {
     const qtde = Number(item.quantidade) || 0
     const preco = Number(item.preco_unitario) || 0
     const desc = Number(item.desconto_percentual) || 0
     const subtotal = (qtde * preco) * (1 - (desc / 100))
+    const pesoUnit = Number(item.produtos?.peso) || 0
 
     qtdeTotal += qtde
     valorTotal += subtotal
+    pesoTotal += (pesoUnit * qtde)
 
     return (
       <tr key={item.id} className="text-[11px] border-b border-gray-300 h-6">
@@ -44,6 +47,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         <td className="text-center">{item.produtos?.sku || '-'}</td>
         <td className="text-center">{qtde}</td>
         <td className="text-center">{item.unidade_medida || 'UN'}</td>
+        <td className="text-center">{item.produtos?.ncm || '-'}</td>
         <td className="text-left px-2">{item.produtos?.nome || 'Produto não encontrado'}</td>
         <td className="text-right px-2">{preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
         <td className="text-center">{desc > 0 ? `${desc}%` : ''}</td>
@@ -58,6 +62,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
     for (let i = itensRender.length; i < maxLines; i++) {
       itensRender.push(
         <tr key={`empty-${i}`} className="text-[11px] border-b border-gray-300 h-6">
+          <td className="text-center"></td>
           <td className="text-center"></td>
           <td className="text-center"></td>
           <td className="text-center"></td>
@@ -181,9 +186,10 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
             <thead>
               <tr className="border-b border-black">
                 <th className="font-normal w-8 py-1">Item</th>
-                <th className="font-normal w-20 py-1">Código</th>
+                <th className="font-normal w-16 py-1">Código</th>
                 <th className="font-normal w-12 py-1">Qtde</th>
                 <th className="font-normal w-10 py-1">U.M</th>
+                <th className="font-normal w-16 py-1">NCM</th>
                 <th className="font-normal text-left px-2 py-1">Descrição</th>
                 <th className="font-normal w-20 text-right px-2 py-1">Valor R$ unit.</th>
                 <th className="font-normal w-12 py-1">Desc %</th>
@@ -210,9 +216,17 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
               <span>Qtd Total:</span>
               <span className="font-medium">{qtdeTotal}</span>
             </div>
+            <div className="flex justify-between border-b border-gray-300 p-1">
+              <span>Peso Total:</span>
+              <span className="font-medium">{pesoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</span>
+            </div>
+            <div className="flex justify-between border-b border-gray-300 p-1">
+              <span>Frete:</span>
+              <span className="font-medium">{(Number(doc.valor_frete) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+            </div>
             <div className="flex justify-between p-1 font-bold text-sm bg-gray-100">
               <span>Valor Total:</span>
-              <span>{valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              <span>{(valorTotal + (Number(doc.valor_frete) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>
           </div>
         </div>

@@ -35,7 +35,7 @@ export async function getDocumentoCompleto(id: string) {
         desconto_percentual,
         unidade_medida,
         produtos (
-          sku, nome
+          sku, nome, ncm, peso
         )
       )
     `)

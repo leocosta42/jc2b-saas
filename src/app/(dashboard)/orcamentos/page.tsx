@@ -24,6 +24,7 @@ export default async function OrcamentosPage() {
             data_emissao,
             data_entrega,
             status,
+            valor_frete,
             clientes (nome, celular),
             itens_pedido (quantidade, preco_unitario, desconto_percentual)
           `)
@@ -33,10 +34,11 @@ export default async function OrcamentosPage() {
         if (!error && data) {
           pedidos = data.map((d: any) => {
             // Calcula o valor total com base nos itens
-            const valorTotal = (d.itens_pedido || []).reduce((acc: number, item: any) => {
+            const subtotalItens = (d.itens_pedido || []).reduce((acc: number, item: any) => {
               const sub = (Number(item.quantidade) * Number(item.preco_unitario)) * (1 - (Number(item.desconto_percentual)/100))
               return acc + sub
             }, 0)
+            const valorTotal = subtotalItens + (Number(d.valor_frete) || 0)
 
             return {
               id: d.id,

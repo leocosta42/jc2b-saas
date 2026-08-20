@@ -16,7 +16,12 @@ export default async function EstatisticasPage() {
   // O ideal seria usar uma RPC function do PostgreSQL para sum(), mas vamos agregar no server side para simplificar o MVP
   const { data: pedidos } = await supabase
     .from('pedidos')
-    .select('valor_total, status, created_at')
+    .select(`
+      status, 
+      created_at,
+      valor_frete,
+      itens_pedido (quantidade, preco_unitario, desconto_percentual)
+    `)
     
   let faturamentoTotal = 0;
   let pedidosAprovados = 0;
@@ -25,7 +30,10 @@ export default async function EstatisticasPage() {
     pedidos.forEach(p => {
       // Ignorar orçamentos não faturados se houver distinção de status
       if (p.status !== 'Cancelado') {
-        faturamentoTotal += Number(p.valor_total || 0);
+        const subtotal = (p.itens_pedido || []).reduce((acc: number, item: any) => {
+          return acc + ((Number(item.quantidade) * Number(item.preco_unitario)) * (1 - (Number(item.desconto_percentual)/100)))
+        }, 0)
+        faturamentoTotal += subtotal + (Number(p.valor_frete) || 0);
         pedidosAprovados++;
       }
     })
