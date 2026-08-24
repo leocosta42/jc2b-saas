@@ -132,6 +132,24 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
     return () => clearTimeout(timer)
   }, [filter, currentQ, pathname, router, searchParams])
 
+  useEffect(() => {
+    if (!currentSort) {
+      const savedSort = localStorage.getItem('jc2b_fornecedores_sort')
+      if (savedSort) {
+        try {
+          const { sort, order } = JSON.parse(savedSort)
+          if (sort) {
+            const params = new URLSearchParams(searchParams.toString())
+            params.set('sort', sort)
+            params.set('order', order || 'asc')
+            router.push(`${pathname}?${params.toString()}`)
+            setSorting([{ id: sort, desc: order === 'desc' }])
+          }
+        } catch (e) {}
+      }
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSortingChange = (updaterOrValue: any) => {
     const newSorting = typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue
     setSorting(newSorting)
@@ -141,9 +159,11 @@ export function FornecedoresTable({ data }: { data: Fornecedor[] }) {
       const { id, desc } = newSorting[0]
       params.set('sort', id)
       params.set('order', desc ? 'desc' : 'asc')
+      localStorage.setItem('jc2b_fornecedores_sort', JSON.stringify({ sort: id, order: desc ? 'desc' : 'asc' }))
     } else {
       params.delete('sort')
       params.delete('order')
+      localStorage.removeItem('jc2b_fornecedores_sort')
     }
     params.delete('page')
     router.push(`${pathname}?${params.toString()}`)
