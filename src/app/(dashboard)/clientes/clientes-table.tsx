@@ -31,7 +31,15 @@ export type Cliente = {
 export const columns: ColumnDef<Cliente>[] = [
   {
     accessorKey: "codigo",
-    header: "Código",
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+      >
+        Código
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    ),
     cell: ({ row }) => <span className="font-semibold text-violet-500">{row.getValue("codigo") || '-'}</span>,
   },
   {
@@ -114,8 +122,11 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const currentQ = searchParams.get('q') || ""
+  const currentSort = searchParams.get('sort')
+  const currentOrder = searchParams.get('order')
 
-  const [sorting, setSorting] = useState<SortingState>([])
+  const initialSorting: SortingState = currentSort ? [{ id: currentSort, desc: currentOrder === 'desc' }] : []
+  const [sorting, setSorting] = useState<SortingState>(initialSorting)
   const [filter, setFilter] = useState(currentQ)
 
   useEffect(() => {
@@ -136,12 +147,30 @@ export function ClientesTable({ data }: { data: Cliente[] }) {
     return () => clearTimeout(timer)
   }, [filter, currentQ, pathname, router, searchParams])
 
+  const handleSortingChange = (updaterOrValue: any) => {
+    const newSorting = typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue
+    setSorting(newSorting)
+    
+    const params = new URLSearchParams(searchParams.toString())
+    if (newSorting.length > 0) {
+      const { id, desc } = newSorting[0]
+      params.set('sort', id)
+      params.set('order', desc ? 'desc' : 'asc')
+    } else {
+      params.delete('sort')
+      params.delete('order')
+    }
+    params.delete('page')
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
   const table = useReactTable({
     data: data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
+    onSortingChange: handleSortingChange,
     getSortedRowModel: getSortedRowModel(),
+    manualSorting: true,
     state: { sorting },
   })
 

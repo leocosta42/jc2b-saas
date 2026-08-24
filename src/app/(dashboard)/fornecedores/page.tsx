@@ -38,6 +38,8 @@ import { Pagination } from '@/app/components/Pagination'
 export default async function FornecedoresPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const resolvedParams = await searchParams
   const q = typeof resolvedParams.q === 'string' ? resolvedParams.q : ''
+  const sort = typeof resolvedParams.sort === 'string' ? resolvedParams.sort : 'nome'
+  const order = typeof resolvedParams.order === 'string' ? resolvedParams.order : 'asc'
   const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page, 10) : 1
   const limit = 20
   const from = (page - 1) * limit
@@ -65,8 +67,11 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
           query = query.or(`nome.ilike.%${q}%,cnpj_cpf.ilike.%${q}%`)
         }
         
+        let sortCol = 'nome'
+        if (sort === 'codigo') sortCol = 'codigo'
+        
         const { data: testData, error: testError, count } = await query
-          .order('nome', { ascending: true })
+          .order(sortCol, { ascending: order === 'asc' })
           .range(from, to)
           
         if (!testError && testData) {

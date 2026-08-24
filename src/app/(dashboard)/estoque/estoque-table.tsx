@@ -84,7 +84,16 @@ export type Produto = {
 export const columns: ColumnDef<Produto>[] = [
   {
     accessorKey: "codigo",
-    header: "Código",
+    enableSorting: true,
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+      >
+        Código
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    ),
     cell: ({ row }) => <div className="text-indigo-500 font-semibold">{row.getValue("codigo")}</div>,
   },
   {
@@ -108,6 +117,22 @@ export const columns: ColumnDef<Produto>[] = [
         )}
       </div>
     ),
+  },
+  {
+    accessorKey: "saldo_estoque",
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+      >
+        Saldo Estoque
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    ),
+    cell: ({ row }) => {
+      const qtd = parseInt(row.getValue("saldo_estoque"))
+      return <div className="font-medium text-left">{qtd}</div>
+    },
   },
   {
     accessorKey: "um",
@@ -145,22 +170,6 @@ export const columns: ColumnDef<Produto>[] = [
     accessorKey: "lucro_porcentagem",
     header: "Lucro %",
     cell: ({ row }) => <div className="text-emerald-500">{row.getValue("lucro_porcentagem")}</div>,
-  },
-  {
-    accessorKey: "saldo_estoque",
-    header: ({ column }) => (
-      <button
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground ml-auto"
-      >
-        Saldo Estoque
-        <ArrowUpDown className="h-4 w-4" />
-      </button>
-    ),
-    cell: ({ row }) => {
-      const qtd = parseInt(row.getValue("saldo_estoque"))
-      return <div className="text-right font-medium">{qtd}</div>
-    },
   },
   {
     accessorKey: "custo_estoque_atual",
@@ -221,29 +230,30 @@ export function EstoqueTable({ data }: DataTableProps) {
     return () => clearTimeout(timer)
   }, [filter, currentQ, pathname, router, searchParams])
 
-  useEffect(() => {
+  const handleSortingChange = (updaterOrValue: any) => {
+    const newSorting = typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue
+    setSorting(newSorting)
+    
     const params = new URLSearchParams(searchParams.toString())
-    if (sorting.length > 0) {
-      const { id, desc } = sorting[0]
-      if (currentSort !== id || currentOrder !== (desc ? 'desc' : 'asc')) {
-        params.set('sort', id)
-        params.set('order', desc ? 'desc' : 'asc')
-        router.push(`${pathname}?${params.toString()}`)
-      }
-    } else if (currentSort) {
+    if (newSorting.length > 0) {
+      const { id, desc } = newSorting[0]
+      params.set('sort', id)
+      params.set('order', desc ? 'desc' : 'asc')
+    } else {
       params.delete('sort')
       params.delete('order')
-      router.push(`${pathname}?${params.toString()}`)
     }
-  }, [sorting, currentSort, currentOrder, pathname, router, searchParams])
+    params.delete('page')
+    router.push(`${pathname}?${params.toString()}`)
+  }
 
   const table = useReactTable({
     data: data,
     columns: columns as any,
     getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
+    onSortingChange: handleSortingChange,
     getSortedRowModel: getSortedRowModel(),
-    manualSorting: true, // Adicionado para evitar que a tabela sobrescreva a ordem server-side localmente
+    manualSorting: true,
     state: {
       sorting,
     },

@@ -12,6 +12,29 @@ async function getTenantId(supabase: any, userId: string): Promise<string | null
   return profile?.tenant_id || null
 }
 
+async function fetchAll(supabase: any, table: string, select: string, tenantId: string) {
+  let allData: any[] = []
+  let page = 0
+  const size = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(select)
+      .eq('tenant_id', tenantId)
+      .eq('ativo', true)
+      .range(page * size, (page + 1) * size - 1)
+      .order('nome')
+    
+    if (error) throw error
+    if (!data || data.length === 0) break
+    
+    allData = allData.concat(data)
+    if (data.length < size) break
+    page++
+  }
+  return allData
+}
+
 // Busca os dados para alimentar os selects (clientes, vendedores, produtos)
 export async function getFormData() {
   const supabase = await createClient()
@@ -21,17 +44,17 @@ export async function getFormData() {
   const tenantId = await getTenantId(supabase, authData.user.id)
   if (!tenantId) return { clientes: [], vendedores: [], produtos: [] }
 
-  const [clientesRes, vendedoresRes, produtosRes, tenantRes] = await Promise.all([
-    supabase.from('clientes').select('id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email').eq('tenant_id', tenantId).eq('ativo', true).order('nome'),
-    supabase.from('vendedores').select('id, nome').eq('tenant_id', tenantId).eq('ativo', true).order('nome'),
-    supabase.from('produtos').select('id, nome, sku, preco_venda, quantidade_estoque, ncm, peso').eq('tenant_id', tenantId).eq('ativo', true).order('nome'),
+  const [clientesData, vendedoresData, produtosData, tenantRes] = await Promise.all([
+    fetchAll(supabase, 'clientes', 'id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email', tenantId),
+    fetchAll(supabase, 'vendedores', 'id, nome', tenantId),
+    fetchAll(supabase, 'produtos', 'id, nome, sku, preco_venda, quantidade_estoque, ncm, peso', tenantId),
     supabase.from('tenants').select('cep').eq('id', tenantId).single()
   ])
 
   return {
-    clientes: clientesRes.data || [],
-    vendedores: vendedoresRes.data || [],
-    produtos: produtosRes.data || [],
+    clientes: clientesData,
+    vendedores: vendedoresData,
+    produtos: produtosData,
     tenant_cep: tenantRes.data?.cep || '13400820'
   }
 }
