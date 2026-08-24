@@ -31,7 +31,7 @@ import { Pagination } from '@/app/components/Pagination'
 export default async function ClientesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const resolvedParams = await searchParams
   const q = typeof resolvedParams.q === 'string' ? resolvedParams.q : ''
-  const sort = typeof resolvedParams.sort === 'string' ? resolvedParams.sort : 'nome'
+  const sort = typeof resolvedParams.sort === 'string' ? resolvedParams.sort : 'codigo'
   const order = typeof resolvedParams.order === 'string' ? resolvedParams.order : 'asc'
   const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page, 10) : 1
   const limit = 20

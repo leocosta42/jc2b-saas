@@ -40,7 +40,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   const resolvedParams = await searchParams
   const q = typeof resolvedParams.q === 'string' ? resolvedParams.q : ''
   const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page, 10) : 1
-  const sort = typeof resolvedParams.sort === 'string' ? resolvedParams.sort : 'nome'
+  const sort = typeof resolvedParams.sort === 'string' ? resolvedParams.sort : 'codigo'
   const order = typeof resolvedParams.order === 'string' ? resolvedParams.order : 'asc'
   
   const limit = 20
