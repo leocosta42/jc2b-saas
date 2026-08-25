@@ -86,6 +86,17 @@ export async function createDocumento(data: {
     const tenantId = await getTenantId(supabase, authData.user.id)
     if (!tenantId) return { error: "Empresa não encontrada." }
 
+    // 0. Se for PEDIDO, validar estoque de TODOS os itens antes de começar
+    if (data.tipo === 'PEDIDO') {
+      for (const item of data.itens) {
+        const { data: prod } = await supabase.from('produtos').select('quantidade_estoque, nome, sku').eq('id', item.produto_id).single()
+        if (prod && (prod.quantidade_estoque || 0) < item.quantidade) {
+          const skuDisplay = prod.sku ? `[${prod.sku}] ` : '';
+          return { error: `Estoque insuficiente! O produto ${skuDisplay}"${prod.nome}" possui apenas ${prod.quantidade_estoque || 0} em estoque. O pedido exige ${item.quantidade}.` }
+        }
+      }
+    }
+
     // 1. Inserir na tabela pedidos (como ORCAMENTO ou PEDIDO)
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
@@ -123,10 +134,16 @@ export async function createDocumento(data: {
       .from('itens_pedido')
       .insert(itensToInsert)
 
-    if (itensError) return { error: "Erro ao inserir itens: " + itensError.message }
+    if (itensError) {
+      // Rollback: deletar o pedido criado já que os itens falharam
+      await supabase.from('pedidos').delete().eq('id', pedido.id)
+      return { error: "Erro ao inserir itens. A operação foi cancelada. " + itensError.message }
+    }
 
     // 3. Se for PEDIDO, precisa dar baixa no estoque
     if (data.tipo === 'PEDIDO') {
+      const baixasRealizadas: { id: string, qtd: number }[] = []
+      
       for (const item of data.itens) {
         // Busca estoque atual
         const { data: prod } = await supabase
@@ -136,10 +153,25 @@ export async function createDocumento(data: {
           .single()
           
         if (prod) {
-          await supabase
+          const { error: updateError } = await supabase
             .from('produtos')
             .update({ quantidade_estoque: (prod.quantidade_estoque || 0) - item.quantidade })
             .eq('id', item.produto_id)
+            
+          if (updateError) {
+             // Rollback das baixas já realizadas
+             for (const baixa of baixasRealizadas) {
+               const { data: bProd } = await supabase.from('produtos').select('quantidade_estoque').eq('id', baixa.id).single()
+               if (bProd) {
+                 await supabase.from('produtos').update({ quantidade_estoque: (bProd.quantidade_estoque || 0) + baixa.qtd }).eq('id', baixa.id)
+               }
+             }
+             // Deletar o pedido e itens
+             await supabase.from('pedidos').delete().eq('id', pedido.id)
+             return { error: "Erro ao atualizar estoque. O pedido foi desfeito para manter a consistência." }
+          } else {
+            baixasRealizadas.push({ id: item.produto_id, qtd: item.quantidade })
+          }
         }
       }
     }
@@ -186,12 +218,29 @@ export async function convertToPedido(id: string) {
 
     if (error) return { error: error.message }
 
-    // Baixa de estoque
+    // Baixa de estoque com rollback
     if (itens) {
+      const baixasRealizadas: { id: string, qtd: number }[] = []
+      
       for (const item of itens) {
         const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
         if (prod) {
-          await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) - item.quantidade }).eq('id', item.produto_id)
+          const { error: updateError } = await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) - item.quantidade }).eq('id', item.produto_id)
+          
+          if (updateError) {
+             // Rollback: restaurar estoque das baixas já feitas
+             for (const baixa of baixasRealizadas) {
+               const { data: bProd } = await supabase.from('produtos').select('quantidade_estoque').eq('id', baixa.id).single()
+               if (bProd) {
+                 await supabase.from('produtos').update({ quantidade_estoque: (bProd.quantidade_estoque || 0) + baixa.qtd }).eq('id', baixa.id)
+               }
+             }
+             // Rollback: Voltar para ORCAMENTO
+             await supabase.from('pedidos').update({ tipo: 'ORCAMENTO', status: 'Aberto' }).eq('id', id)
+             return { error: "Erro ao baixar o estoque. A aprovação do pedido foi cancelada para manter a consistência." }
+          } else {
+            baixasRealizadas.push({ id: item.produto_id, qtd: item.quantidade })
+          }
         }
       }
     }
