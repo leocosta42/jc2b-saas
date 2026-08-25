@@ -27,20 +27,25 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
   const dataEntrega = doc.data_entrega ? new Date(doc.data_entrega).toLocaleDateString('pt-BR') : ''
 
   // Cálculos de totais
-  let qtdeTotal = 0
-  let valorTotal = 0
-  let pesoTotal = 0
+  const qtdeTotal = itens.reduce((acc: number, item: any) => acc + (Number(item.quantidade) || 0), 0)
+  const valorTotal = itens.reduce((acc: number, item: any) => {
+    const qtde = Number(item.quantidade) || 0
+    const preco = Number(item.preco_unitario) || 0
+    const desc = Number(item.desconto_percentual) || 0
+    return acc + (qtde * preco) * (1 - (desc / 100))
+  }, 0)
+  const pesoTotal = itens.reduce((acc: number, item: any) => {
+    const qtde = Number(item.quantidade) || 0
+    const pesoUnit = Number(item.produtos?.peso) || 0
+    return acc + (pesoUnit * qtde)
+  }, 0)
 
   const itensRender = itens.map((item: any, i: number) => {
     const qtde = Number(item.quantidade) || 0
     const preco = Number(item.preco_unitario) || 0
     const desc = Number(item.desconto_percentual) || 0
     const subtotal = (qtde * preco) * (1 - (desc / 100))
-    const pesoUnit = Number(item.produtos?.peso) || 0
 
-    qtdeTotal += qtde
-    valorTotal += subtotal
-    pesoTotal += (pesoUnit * qtde)
 
     return (
       <tr key={item.id} className="text-[11px] border-b border-gray-300 h-6">
