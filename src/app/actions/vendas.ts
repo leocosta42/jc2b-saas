@@ -12,27 +12,17 @@ async function getTenantId(supabase: any, userId: string): Promise<string | null
   return profile?.tenant_id || null
 }
 
-async function fetchAll(supabase: any, table: string, select: string, tenantId: string) {
-  let allData: any[] = []
-  let page = 0
-  const size = 1000
-  while (true) {
-    const { data, error } = await supabase
-      .from(table)
-      .select(select)
-      .eq('tenant_id', tenantId)
-      .eq('ativo', true)
-      .range(page * size, (page + 1) * size - 1)
-      .order('nome')
-    
-    if (error) throw error
-    if (!data || data.length === 0) break
-    
-    allData = allData.concat(data)
-    if (data.length < size) break
-    page++
-  }
-  return allData
+async function fetchTop(supabase: any, table: string, select: string, tenantId: string, limit: number = 100) {
+  const { data, error } = await supabase
+    .from(table)
+    .select(select)
+    .eq('tenant_id', tenantId)
+    .eq('ativo', true)
+    .order('nome')
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
 }
 
 // Busca os dados para alimentar os selects (clientes, vendedores, produtos)
@@ -45,9 +35,9 @@ export async function getFormData() {
   if (!tenantId) return { clientes: [], vendedores: [], produtos: [] }
 
   const [clientesData, vendedoresData, produtosData, tenantRes] = await Promise.all([
-    fetchAll(supabase, 'clientes', 'id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email', tenantId),
-    fetchAll(supabase, 'vendedores', 'id, nome', tenantId),
-    fetchAll(supabase, 'produtos', 'id, nome, sku, preco_venda, quantidade_estoque, ncm, peso', tenantId),
+    fetchTop(supabase, 'clientes', 'id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email', tenantId),
+    fetchTop(supabase, 'vendedores', 'id, nome', tenantId, 1000), // vendedores usually don't exceed 1000
+    fetchTop(supabase, 'produtos', 'id, nome, sku, preco_venda, quantidade_estoque, ncm, peso', tenantId),
     supabase.from('tenants').select('cep').eq('id', tenantId).single()
   ])
 
@@ -57,6 +47,42 @@ export async function getFormData() {
     produtos: produtosData,
     tenant_cep: tenantRes.data?.cep || '13400820'
   }
+}
+
+export async function searchClientesAPI(query: string) {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return []
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return []
+
+  const { data } = await supabase
+    .from('clientes')
+    .select('id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email')
+    .eq('tenant_id', tenantId)
+    .eq('ativo', true)
+    .or(`nome.ilike.%${query}%,cpf_cnpj.ilike.%${query}%,codigo.ilike.%${query}%`)
+    .limit(50)
+  
+  return data || []
+}
+
+export async function searchProdutosAPI(query: string) {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return []
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return []
+
+  const { data } = await supabase
+    .from('produtos')
+    .select('id, nome, sku, preco_venda, quantidade_estoque, ncm, peso')
+    .eq('tenant_id', tenantId)
+    .eq('ativo', true)
+    .or(`nome.ilike.%${query}%,sku.ilike.%${query}%`)
+    .limit(50)
+  
+  return data || []
 }
 
 export async function createDocumento(data: {

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createDocumento, updateDocumento } from "@/app/actions/vendas"
+import { createDocumento, updateDocumento, searchClientesAPI, searchProdutosAPI } from "@/app/actions/vendas"
 import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2, Search, Truck } from "lucide-react"
 import { simularMelhorEnvio } from "@/app/actions/frete"
 import Link from "next/link"
@@ -23,6 +23,9 @@ interface Props {
 export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  
+  const [listaClientes, setListaClientes] = useState(dadosForm.clientes)
+  const [listaProdutos, setListaProdutos] = useState(dadosForm.produtos)
 
   // Header
   const [dataEmissao, setDataEmissao] = useState(
@@ -75,14 +78,14 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   const [modalClienteOpen, setModalClienteOpen] = useState(false)
   const [buscaModalCliente, setBuscaModalCliente] = useState("")
   const [inputClienteCodigo, setInputClienteCodigo] = useState(() => {
-    const c = dadosForm.clientes.find(cli => cli.id === pedidoEdit?.cliente_id)
+    const c = listaClientes.find(cli => cli.id === pedidoEdit?.cliente_id)
     return c?.codigo || ""
   })
 
-  const clienteSelecionado = dadosForm.clientes.find(c => c.id === clienteId)
+  const clienteSelecionado = listaClientes.find(c => c.id === clienteId)
 
   const handleProdutoChange = (index: number, produtoId: string) => {
-    const produto = dadosForm.produtos.find(p => p.id === produtoId)
+    const produto = listaProdutos.find(p => p.id === produtoId)
     if (produto) {
       const novosItens = [...itens]
       novosItens[index].produto_id = produtoId
@@ -125,7 +128,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   }, 0)
 
   const totalPeso = itens.reduce((acc: number, item: any) => {
-    const p = dadosForm.produtos.find(prod => prod.id === item.produto_id)
+    const p = listaProdutos.find(prod => prod.id === item.produto_id)
     return acc + ((Number(p?.peso) || 0) * (Number(item.quantidade) || 0))
   }, 0)
 
@@ -139,7 +142,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
     // Validação de Estoque Apenas para PEDIDOS
     if (tipo === 'PEDIDO') {
       for (const item of itens) {
-        const prod = dadosForm.produtos.find(p => p.id === item.produto_id);
+        const prod = listaProdutos.find(p => p.id === item.produto_id);
         if (prod) {
           const saldoAtual = prod.quantidade_estoque || 0;
           if (saldoAtual < Number(item.quantidade)) {
@@ -245,7 +248,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                       placeholder="Cód..."
                       value={inputClienteCodigo}
                       onChange={(e) => setInputClienteCodigo(e.target.value)}
-                      onKeyDown={(e) => {
+                      onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault()
                           const val = e.currentTarget.value
@@ -253,7 +256,17 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                             setClienteId("")
                             return
                           }
-                          const c = dadosForm.clientes.find(cli => cli.codigo?.toLowerCase() === val.toLowerCase())
+                          let c = listaClientes.find(cli => cli.codigo?.toLowerCase() === val.toLowerCase())
+                          if (!c) {
+                            const res = await searchClientesAPI(val)
+                            if (res.length > 0) {
+                              setListaClientes(prev => {
+                                const newCli = res.filter(r => !prev.some(p => p.id === r.id))
+                                return [...prev, ...newCli]
+                              })
+                              c = res.find(cli => cli.codigo?.toLowerCase() === val.toLowerCase()) || res[0]
+                            }
+                          }
                           if (c) {
                             setClienteId(c.id)
                             setInputClienteCodigo(c.codigo || "")
@@ -263,13 +276,23 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                           }
                         }
                       }}
-                      onBlur={(e) => {
+                      onBlur={async (e) => {
                         const val = e.target.value
                         if (!val) {
                           setClienteId("")
                           return
                         }
-                        const c = dadosForm.clientes.find(cli => cli.codigo?.toLowerCase() === val.toLowerCase())
+                        let c = listaClientes.find(cli => cli.codigo?.toLowerCase() === val.toLowerCase())
+                        if (!c) {
+                          const res = await searchClientesAPI(val)
+                          if (res.length > 0) {
+                            setListaClientes(prev => {
+                              const newCli = res.filter(r => !prev.some(p => p.id === r.id))
+                              return [...prev, ...newCli]
+                            })
+                            c = res.find(cli => cli.codigo?.toLowerCase() === val.toLowerCase()) || res[0]
+                          }
+                        }
                         if (c) {
                           setClienteId(c.id)
                           setInputClienteCodigo(c.codigo || "")
@@ -333,7 +356,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                 <tbody className="divide-y divide-border/50">
                   {itens.map((item: any, index: number) => {
                     const sub = (Number(item.quantidade) * Number(item.preco_unitario)) * (1 - (Number(item.desconto_percentual)/100))
-                    const pData = dadosForm.produtos.find(p => p.id === item.produto_id)
+                    const pData = listaProdutos.find(p => p.id === item.produto_id)
                     
                     return (
                       <tr key={item.id} className="hover:bg-muted/20">
@@ -343,38 +366,56 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                             <input 
                               type="text"
                               value={item.produto_sku || ''}
-                              onChange={(e) => updateItem(index, 'produto_sku', e.target.value)}
-                              onKeyDown={(e) => {
+                              onChange={(e) => {
+                                const novosItens = [...itens];
+                                novosItens[index].produto_sku = e.target.value;
+                                setItens(novosItens);
+                              }}
+                              onKeyDown={async (e) => {
                                 if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  const val = e.currentTarget.value;
-                                  if (!val) return;
-                                  const p = dadosForm.produtos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
-                                  if (p) {
-                                    handleProdutoChange(index, p.id);
-                                    updateItem(index, 'produto_nome', p.nome);
-                                    if (tipo === 'PEDIDO' && (p.quantidade_estoque || 0) <= 0) {
-                                      toast.warning(`Atenção: O produto ${p.nome} está sem estoque!`);
+                                  e.preventDefault()
+                                  const val = e.currentTarget.value
+                                  if (!val) {
+                                    handleProdutoChange(index, "")
+                                    return
+                                  }
+                                  let p = listaProdutos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
+                                  if (!p) {
+                                    const res = await searchProdutosAPI(val)
+                                    if (res.length > 0) {
+                                      setListaProdutos(prev => {
+                                        const newP = res.filter(r => !prev.some(x => x.id === r.id))
+                                        return [...prev, ...newP]
+                                      })
+                                      p = res.find(prod => prod.sku?.toLowerCase() === val.toLowerCase()) || res[0]
                                     }
+                                  }
+                                  if (p) {
+                                    handleProdutoChange(index, p.id)
                                   } else {
-                                    updateItem(index, 'produto_id', '');
-                                    updateItem(index, 'produto_nome', '');
-                                    updateItem(index, 'preco_unitario', 0);
-                                    alert("Produto não encontrado pelo código.");
+                                    toast.error("Produto não encontrado pelo código.")
+                                    handleProdutoChange(index, "")
                                   }
                                 }
                               }}
-                              onBlur={(e) => {
-                                const val = e.target.value;
-                                if (!val) return;
-                                const p = dadosForm.produtos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
-                                if (p) {
-                                  handleProdutoChange(index, p.id);
-                                  updateItem(index, 'produto_nome', p.nome);
-                                  if (tipo === 'PEDIDO' && (p.quantidade_estoque || 0) <= 0) {
-                                    toast.warning(`Atenção: O produto ${p.nome} está sem estoque!`);
+                              onBlur={async (e) => {
+                                const val = e.target.value
+                                if (!val) {
+                                  handleProdutoChange(index, "")
+                                  return
+                                }
+                                let p = listaProdutos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
+                                if (!p) {
+                                  const res = await searchProdutosAPI(val)
+                                  if (res.length > 0) {
+                                    setListaProdutos(prev => {
+                                      const newP = res.filter(r => !prev.some(x => x.id === r.id))
+                                      return [...prev, ...newP]
+                                    })
+                                    p = res.find(prod => prod.sku?.toLowerCase() === val.toLowerCase()) || res[0]
                                   }
-                                } else {
+                                }
+                                if (p) {
                                   updateItem(index, 'produto_id', '');
                                   updateItem(index, 'produto_nome', '');
                                   updateItem(index, 'preco_unitario', 0);
@@ -517,7 +558,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   <span className="text-muted-foreground">Peso Total (kg)</span>
                   <span className="font-medium">
                     {itens.reduce((acc: number, item: any) => {
-                      const p = dadosForm.produtos.find(prod => prod.id === item.produto_id);
+                      const p = listaProdutos.find(prod => prod.id === item.produto_id);
                       return acc + ((Number(p?.peso) || 0) * (Number(item.quantidade) || 0));
                     }, 0).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                   </span>
@@ -627,7 +668,17 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                 type="text" 
                 placeholder="Buscar por código, nome ou CNPJ..." 
                 value={buscaModalCliente}
-                onChange={(e) => setBuscaModalCliente(e.target.value)}
+                onChange={async (e) => {
+                  const val = e.target.value
+                  setBuscaModalCliente(val)
+                  if (val.length >= 3) {
+                    const res = await searchClientesAPI(val)
+                    setListaClientes(prev => {
+                      const newCli = res.filter(r => !prev.some(p => p.id === r.id))
+                      return [...prev, ...newCli]
+                    })
+                  }
+                }}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 focus:ring-2 focus:ring-primary/50"
                 autoFocus
               />
@@ -643,7 +694,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
-                  {dadosForm.clientes
+                  {listaClientes
                     .filter(c => !buscaModalCliente || 
                                 (c.codigo?.toLowerCase() || '').includes(buscaModalCliente.toLowerCase()) || 
                                 c.nome.toLowerCase().includes(buscaModalCliente.toLowerCase()) || 
@@ -666,7 +717,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                         <td className="px-4 py-2">{c.cidade ? `${c.cidade}/${c.estado}` : '-'}</td>
                       </tr>
                     ))}
-                    {dadosForm.clientes.filter(c => !buscaModalCliente || (c.codigo?.toLowerCase() || '').includes(buscaModalCliente.toLowerCase()) || c.nome.toLowerCase().includes(buscaModalCliente.toLowerCase()) || (c.cpf_cnpj || '').includes(buscaModalCliente)).length === 0 && (
+                    {listaClientes.filter(c => !buscaModalCliente || (c.codigo?.toLowerCase() || '').includes(buscaModalCliente.toLowerCase()) || c.nome.toLowerCase().includes(buscaModalCliente.toLowerCase()) || (c.cpf_cnpj || '').includes(buscaModalCliente)).length === 0 && (
                       <tr>
                         <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
                           Nenhum cliente encontrado na consulta.
@@ -706,7 +757,17 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                 type="text" 
                 placeholder="Buscar por código ou descrição..." 
                 value={buscaModal}
-                onChange={(e) => setBuscaModal(e.target.value)}
+                onChange={async (e) => {
+                  const val = e.target.value
+                  setBuscaModal(val)
+                  if (val.length >= 3) {
+                    const res = await searchProdutosAPI(val)
+                    setListaProdutos(prev => {
+                      const newP = res.filter(r => !prev.some(p => p.id === r.id))
+                      return [...prev, ...newP]
+                    })
+                  }
+                }}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 focus:ring-2 focus:ring-primary/50"
                 autoFocus
               />
@@ -722,7 +783,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
-                  {dadosForm.produtos
+                  {listaProdutos
                     .filter(p => !buscaModal || (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) || p.nome.toLowerCase().includes(buscaModal.toLowerCase()))
                     .map(p => (
                       <tr 
@@ -757,7 +818,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                         </td>
                       </tr>
                     ))}
-                    {dadosForm.produtos.filter(p => !buscaModal || (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) || p.nome.toLowerCase().includes(buscaModal.toLowerCase())).length === 0 && (
+                    {listaProdutos.filter(p => !buscaModal || (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) || p.nome.toLowerCase().includes(buscaModal.toLowerCase())).length === 0 && (
                       <tr>
                         <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
                           Nenhum produto encontrado na consulta.
