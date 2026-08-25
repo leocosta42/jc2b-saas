@@ -161,8 +161,9 @@ export async function getFornecedoresList() {
   const { data: authData } = await supabase.auth.getUser()
   if (!authData?.user) return []
 
-  const tenantId = await getTenantId(supabase, authData.user.id)
-  if (!tenantId) return []
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return []
+  const tenantId = profile.tenant_id
 
   const { data } = await supabase
     .from('fornecedores')
@@ -211,8 +212,9 @@ export async function getProdutoById(id: string) {
   const { data: authData } = await supabase.auth.getUser()
   if (!authData?.user) return null
 
-  const tenantId = await getTenantId(supabase, authData.user.id)
-  if (!tenantId) return null
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return null
+  const tenantId = profile.tenant_id
 
   const { data } = await supabase
     .from('produtos')
