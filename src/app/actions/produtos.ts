@@ -3,13 +3,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
-async function getTenantId(supabase: any, userId: string): Promise<string | null> {
+async function getTenantAndRole(supabase: any, userId: string) {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id')
+    .select('tenant_id, role')
     .eq('id', userId)
     .single()
-  return profile?.tenant_id || null
+  return profile || { tenant_id: null, role: null }
 }
 
 export async function createProduto(formData: FormData) {
@@ -18,8 +18,10 @@ export async function createProduto(formData: FormData) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada." }
+    const profile = await getTenantAndRole(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+    const tenantId = profile.tenant_id
+    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
 
     const codigo = formData.get("codigo") as string
     const descricao = formData.get("descricao") as string
@@ -31,21 +33,30 @@ export async function createProduto(formData: FormData) {
 
     if (!descricao) return { error: "A descrição é obrigatória." }
 
-    const { error } = await supabase
-      .from('produtos')
-      .insert({
+    const insertPayload: any = {
         tenant_id: tenantId,
         sku: codigo,
         nome: descricao,
-        descricao: um, // Guardando U.M aqui provisoriamente ou podemos usar para unidade
-        preco_custo,
+        descricao: um, // Guardando U.M aqui provisoriamente
         preco_venda,
-        quantidade_estoque,
         fornecedor_id: fornecedor_id || null,
         ncm: formData.get("ncm") as string || null,
         peso: Number(formData.get("peso")) || 0,
-        bloqueado: formData.get("bloqueado") === 'true'
-      })
+    }
+
+    if (isAdmin) {
+      insertPayload.preco_custo = preco_custo
+      insertPayload.quantidade_estoque = quantidade_estoque
+      insertPayload.bloqueado = formData.get("bloqueado") === 'true'
+    } else {
+      insertPayload.preco_custo = 0
+      insertPayload.quantidade_estoque = 0
+      insertPayload.bloqueado = false
+    }
+
+    const { error } = await supabase
+      .from('produtos')
+      .insert(insertPayload)
 
     if (error) {
       console.error("Erro ao inserir produto:", error)
@@ -65,8 +76,10 @@ export async function updateProduto(id: string, formData: FormData) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada." }
+    const profile = await getTenantAndRole(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+    const tenantId = profile.tenant_id
+    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
 
     const codigo = formData.get("codigo") as string
     const descricao = formData.get("descricao") as string
@@ -78,20 +91,25 @@ export async function updateProduto(id: string, formData: FormData) {
 
     if (!descricao) return { error: "A descrição é obrigatória." }
 
-    const { error } = await supabase
-      .from('produtos')
-      .update({
+    const updatePayload: any = {
         sku: codigo,
         nome: descricao,
         descricao: um,
-        preco_custo,
         preco_venda,
-        quantidade_estoque,
         fornecedor_id: fornecedor_id || null,
         ncm: formData.get("ncm") as string || null,
         peso: Number(formData.get("peso")) || 0,
-        bloqueado: formData.get("bloqueado") === 'true'
-      })
+    }
+
+    if (isAdmin) {
+      updatePayload.preco_custo = preco_custo
+      updatePayload.quantidade_estoque = quantidade_estoque
+      updatePayload.bloqueado = formData.get("bloqueado") === 'true'
+    }
+
+    const { error } = await supabase
+      .from('produtos')
+      .update(updatePayload)
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
@@ -113,8 +131,9 @@ export async function deleteProduto(id: string) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada." }
+    const profile = await getTenantAndRole(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+    const tenantId = profile.tenant_id
 
     const { error } = await supabase
       .from('produtos')
@@ -160,8 +179,9 @@ export async function getNextSku() {
   const { data: authData } = await supabase.auth.getUser()
   if (!authData?.user) return 'PRO0001'
 
-  const tenantId = await getTenantId(supabase, authData.user.id)
-  if (!tenantId) return 'PRO0001'
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return 'PRD0001'
+  const tenantId = profile.tenant_id
 
   // Busca o último produto que comece com PRO e tenha números
   const { data, error } = await supabase

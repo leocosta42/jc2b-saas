@@ -4,13 +4,13 @@ import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { fornecedorSchema } from "./schema"
 
-async function getTenantId(supabase: any, userId: string): Promise<string | null> {
+async function getTenantAndRole(supabase: any, userId: string) {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id')
+    .select('tenant_id, role')
     .eq('id', userId)
     .single()
-  return profile?.tenant_id || null
+  return profile || { tenant_id: null, role: null }
 }
 
 export async function createFornecedor(formData: FormData) {
@@ -19,8 +19,10 @@ export async function createFornecedor(formData: FormData) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError || !authData?.user) return { error: "Usuário não autenticado. Faça login para continuar." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada. Execute o script de correção no Supabase." }
+    const profile = await getTenantAndRole(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Empresa não encontrada. Execute o script de correção no Supabase." }
+    const tenantId = profile.tenant_id
+    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
 
     const rawData = {
       codigo: formData.get("codigo") as string,
@@ -58,24 +60,29 @@ export async function createFornecedor(formData: FormData) {
       }
     }
 
+    const insertPayload: any = {
+      tenant_id: tenantId,
+      codigo,
+      nome,
+      cnpj_cpf: documento,
+      telefone: celular,
+      email,
+      cep,
+      rua,
+      numero,
+      complemento,
+      bairro,
+      cidade,
+      estado,
+    }
+
+    if (isAdmin) {
+      insertPayload.bloqueado = bloqueado
+    }
+
     const { error } = await supabase
       .from('fornecedores')
-      .insert({
-        tenant_id: tenantId,
-        codigo,
-        nome,
-        cnpj_cpf: documento,
-        telefone: celular,
-        email,
-        cep,
-        rua,
-        numero,
-        complemento,
-        bairro,
-        cidade,
-        estado,
-        bloqueado,
-      })
+      .insert(insertPayload)
 
     if (error) {
       console.error("Erro ao inserir fornecedor:", error)
@@ -95,8 +102,10 @@ export async function updateFornecedor(id: string, formData: FormData) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada." }
+    const profile = await getTenantAndRole(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+    const tenantId = profile.tenant_id
+    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
 
     const rawData = {
       codigo: formData.get("codigo") as string,
@@ -135,9 +144,17 @@ export async function updateFornecedor(id: string, formData: FormData) {
       }
     }
 
+    const updatePayload: any = {
+      codigo, nome, cnpj_cpf: documento, telefone: celular, email, cep, rua, numero, complemento, bairro, cidade, estado
+    }
+    
+    if (isAdmin) {
+      updatePayload.bloqueado = bloqueado
+    }
+
     const { error } = await supabase
       .from('fornecedores')
-      .update({ codigo, nome, cnpj_cpf: documento, telefone: celular, email, cep, rua, numero, complemento, bairro, cidade, estado, bloqueado })
+      .update(updatePayload)
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
@@ -156,8 +173,9 @@ export async function deleteFornecedor(id: string) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada." }
+    const profile = await getTenantAndRole(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+    const tenantId = profile.tenant_id
 
     const { error } = await supabase
       .from('fornecedores')
@@ -179,13 +197,14 @@ export async function getNextFornecedorCode() {
   const { data: authData } = await supabase.auth.getUser()
   if (!authData?.user) return "FORN001"
 
-  const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
-  if (!profile?.tenant_id) return "FORN001"
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return "FORN001"
+  const tenantId = profile.tenant_id
 
   const { data } = await supabase
     .from('fornecedores')
     .select('codigo')
-    .eq('tenant_id', profile.tenant_id)
+    .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(1)
 
