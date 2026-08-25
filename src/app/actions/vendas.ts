@@ -87,9 +87,15 @@ export async function createDocumento(data: {
     if (!tenantId) return { error: "Empresa não encontrada." }
 
     // 0. Se for PEDIDO, validar estoque de TODOS os itens antes de começar
+    let produtosCache: any[] = []
+    
     if (data.tipo === 'PEDIDO') {
+      const produtoIds = data.itens.map(i => i.produto_id)
+      const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque, nome, sku').in('id', produtoIds)
+      produtosCache = produtos || []
+
       for (const item of data.itens) {
-        const { data: prod } = await supabase.from('produtos').select('quantidade_estoque, nome, sku').eq('id', item.produto_id).single()
+        const prod = produtosCache.find(p => p.id === item.produto_id)
         if (prod && (prod.quantidade_estoque || 0) < item.quantidade) {
           const skuDisplay = prod.sku ? `[${prod.sku}] ` : '';
           return { error: `Estoque insuficiente! O produto ${skuDisplay}"${prod.nome}" possui apenas ${prod.quantidade_estoque || 0} em estoque. O pedido exige ${item.quantidade}.` }
@@ -145,12 +151,7 @@ export async function createDocumento(data: {
       const baixasRealizadas: { id: string, qtd: number }[] = []
       
       for (const item of data.itens) {
-        // Busca estoque atual
-        const { data: prod } = await supabase
-          .from('produtos')
-          .select('quantidade_estoque')
-          .eq('id', item.produto_id)
-          .single()
+        const prod = produtosCache.find(p => p.id === item.produto_id)
           
         if (prod) {
           const { error: updateError } = await supabase
@@ -159,11 +160,11 @@ export async function createDocumento(data: {
             .eq('id', item.produto_id)
             
           if (updateError) {
-             // Rollback das baixas já realizadas
+             // Rollback das baixas já realizadas (usando o valor original do cache)
              for (const baixa of baixasRealizadas) {
-               const { data: bProd } = await supabase.from('produtos').select('quantidade_estoque').eq('id', baixa.id).single()
+               const bProd = produtosCache.find(p => p.id === baixa.id)
                if (bProd) {
-                 await supabase.from('produtos').update({ quantidade_estoque: (bProd.quantidade_estoque || 0) + baixa.qtd }).eq('id', baixa.id)
+                 await supabase.from('produtos').update({ quantidade_estoque: bProd.quantidade_estoque || 0 }).eq('id', baixa.id)
                }
              }
              // Deletar o pedido e itens
@@ -199,9 +200,14 @@ export async function convertToPedido(id: string) {
       .eq('tenant_id', tenantId)
 
     // Validar estoque ANTES de converter
+    let produtosCache: any[] = []
     if (itens) {
+      const produtoIds = itens.map(i => i.produto_id)
+      const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque, nome, sku').in('id', produtoIds)
+      produtosCache = produtos || []
+      
       for (const item of itens) {
-        const { data: prod } = await supabase.from('produtos').select('quantidade_estoque, nome, sku').eq('id', item.produto_id).single()
+        const prod = produtosCache.find(p => p.id === item.produto_id)
         if (prod && (prod.quantidade_estoque || 0) < item.quantidade) {
           const skuDisplay = prod.sku ? `[${prod.sku}] ` : '';
           return { error: `Estoque insuficiente! O produto ${skuDisplay}"${prod.nome}" possui apenas ${prod.quantidade_estoque || 0} em estoque. O pedido exige ${item.quantidade}.` }
@@ -223,16 +229,16 @@ export async function convertToPedido(id: string) {
       const baixasRealizadas: { id: string, qtd: number }[] = []
       
       for (const item of itens) {
-        const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
+        const prod = produtosCache.find(p => p.id === item.produto_id)
         if (prod) {
           const { error: updateError } = await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) - item.quantidade }).eq('id', item.produto_id)
           
           if (updateError) {
-             // Rollback: restaurar estoque das baixas já feitas
+             // Rollback: restaurar estoque das baixas já feitas (usando valor original)
              for (const baixa of baixasRealizadas) {
-               const { data: bProd } = await supabase.from('produtos').select('quantidade_estoque').eq('id', baixa.id).single()
+               const bProd = produtosCache.find(p => p.id === baixa.id)
                if (bProd) {
-                 await supabase.from('produtos').update({ quantidade_estoque: (bProd.quantidade_estoque || 0) + baixa.qtd }).eq('id', baixa.id)
+                 await supabase.from('produtos').update({ quantidade_estoque: bProd.quantidade_estoque || 0 }).eq('id', baixa.id)
                }
              }
              // Rollback: Voltar para ORCAMENTO
@@ -271,8 +277,12 @@ export async function deleteDocumento(id: string, tipo: 'ORCAMENTO' | 'PEDIDO') 
         .eq('tenant_id', tenantId)
 
       if (itens && itens.length > 0) {
+        const produtoIds = itens.map(i => i.produto_id)
+        const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque').in('id', produtoIds)
+        const produtosCache = produtos || []
+
         await Promise.all(itens.map(async (item) => {
-          const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
+          const prod = produtosCache.find(p => p.id === item.produto_id)
           if (prod) {
             await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) + item.quantidade }).eq('id', item.produto_id)
           }
