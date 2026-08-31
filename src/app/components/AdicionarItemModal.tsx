@@ -27,7 +27,8 @@ interface AdicionarItemModalProps {
 export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, onAdicionar }: AdicionarItemModalProps) {
   const [busca, setBusca] = useState("")
   const [listaProdutos, setListaProdutos] = useState<Produto[]>([])
-  
+  const [buscando, setBuscando] = useState(false)
+
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null)
   const [quantidade, setQuantidade] = useState<number | string>(1)
   const [desconto, setDesconto] = useState<number | string>(0)
@@ -42,12 +43,29 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
     }
   }, [isOpen, listaProdutosInit])
 
+  // Busca automatica no servidor: a lista local so tem os primeiros produtos
+  // carregados (o catalogo pode ter milhares de itens), entao sem isso o
+  // usuario so encontra produtos que ja estavam pre-carregados.
+  useEffect(() => {
+    if (!isOpen || busca.trim().length < 3) return
+    const timer = setTimeout(async () => {
+      setBuscando(true)
+      const res = await searchProdutosAPI(busca)
+      setListaProdutos(prev => {
+        const novos = res.filter(r => !prev.some(x => x.id === r.id))
+        return [...prev, ...novos]
+      })
+      setBuscando(false)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [busca, isOpen])
+
   if (!isOpen) return null
 
   // Filtra localmente primeiro
-  const filtrados = listaProdutos.filter(p => 
-    !busca || 
-    (p.sku?.toLowerCase() || '').includes(busca.toLowerCase()) || 
+  const filtrados = listaProdutos.filter(p =>
+    !busca ||
+    (p.sku?.toLowerCase() || '').includes(busca.toLowerCase()) ||
     p.nome.toLowerCase().includes(busca.toLowerCase())
   )
 
@@ -55,21 +73,9 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
     setProdutoSelecionado(p)
     setQuantidade(1)
     setDesconto(0)
-    
+
     if (tipo === 'PEDIDO' && (p.quantidade_estoque || 0) <= 0) {
       toast.warning(`Atenção: O produto ${p.nome} está sem estoque!`)
-    }
-  }
-
-  const handleBuscaRemota = async () => {
-    if (busca.length > 2) {
-      const res = await searchProdutosAPI(busca)
-      if (res.length > 0) {
-        setListaProdutos(prev => {
-          const newP = res.filter(r => !prev.some(x => x.id === r.id))
-          return [...prev, ...newP]
-        })
-      }
     }
   }
 
@@ -121,14 +127,11 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
         <div className="p-4 border-b border-border/50 bg-background flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Buscar por código ou descrição (Digite e pressione Enter para buscar na nuvem...)" 
+            <input
+              type="text"
+              placeholder="Buscar por código ou descrição..."
               value={busca}
               onChange={e => setBusca(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleBuscaRemota()
-              }}
               className="w-full h-10 rounded-md border border-input bg-muted/20 pl-9 pr-4 text-sm focus:ring-2 focus:ring-indigo-500"
               autoFocus
             />
@@ -184,9 +187,11 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
               {filtrados.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                    {busca.length > 2 
-                      ? "Nenhum produto encontrado. Pressione Enter para buscar no banco de dados." 
-                      : "Digite para buscar produtos..."}
+                    {buscando
+                      ? "Buscando..."
+                      : busca.length > 2
+                        ? "Nenhum produto encontrado."
+                        : "Digite para buscar produtos..."}
                   </td>
                 </tr>
               )}
