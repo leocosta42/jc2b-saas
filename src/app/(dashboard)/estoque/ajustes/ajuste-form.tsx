@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Search, Save, Loader2, PackageSearch } from 'lucide-react'
 import { searchProdutosAPI } from '@/app/actions/vendas'
-import { criarAjusteEstoque } from '@/app/actions/estoque'
+import { criarAjusteEstoque, getSaldoAtualProduto } from '@/app/actions/estoque'
 
 interface Produto {
   id: string
@@ -28,6 +28,7 @@ export function AjusteForm({ produtosIniciais }: { produtosIniciais: Produto[] }
   const [listaProdutos, setListaProdutos] = useState<Produto[]>(produtosIniciais)
   const [inputCodigo, setInputCodigo] = useState('')
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null)
+  const [carregandoSelecao, setCarregandoSelecao] = useState(false)
 
   const [modalProdutoOpen, setModalProdutoOpen] = useState(false)
   const [buscaModal, setBuscaModal] = useState('')
@@ -36,14 +37,28 @@ export function AjusteForm({ produtosIniciais }: { produtosIniciais: Produto[] }
   const [motivo, setMotivo] = useState('entrada_manual')
   const [observacoes, setObservacoes] = useState('')
 
-  const handleSelecionar = (p: Produto) => {
-    setProdutoSelecionado(p)
+  // Resincroniza a lista local sempre que a pagina revalida (ex: apos um
+  // ajuste, router.refresh() traz saldos atualizados do servidor).
+  useEffect(() => {
+    setListaProdutos(produtosIniciais)
+  }, [produtosIniciais])
+
+  const handleSelecionar = async (p: Produto) => {
     setInputCodigo('')
     setModalProdutoOpen(false)
     setBuscaModal('')
-    setNovoSaldo(p.quantidade_estoque ?? 0)
     setMotivo('entrada_manual')
     setObservacoes('')
+    setCarregandoSelecao(true)
+
+    // Busca o saldo real no servidor: a copia local pode estar desatualizada
+    // se este produto foi ajustado ha pouco.
+    const atual = await getSaldoAtualProduto(p.id)
+    const produtoAtualizado = atual ? { ...p, ...atual } : p
+
+    setProdutoSelecionado(produtoAtualizado)
+    setNovoSaldo(produtoAtualizado.quantidade_estoque ?? 0)
+    setCarregandoSelecao(false)
   }
 
   const buscarPorCodigo = async (val: string) => {
@@ -108,6 +123,7 @@ export function AjusteForm({ produtosIniciais }: { produtosIniciais: Produto[] }
                   type="text"
                   placeholder="Cód..."
                   value={inputCodigo}
+                  disabled={carregandoSelecao}
                   onChange={(e) => setInputCodigo(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -116,19 +132,20 @@ export function AjusteForm({ produtosIniciais }: { produtosIniciais: Produto[] }
                     }
                   }}
                   onBlur={(e) => buscarPorCodigo(e.target.value)}
-                  className="h-10 w-full rounded-md border border-input bg-background/50 px-3 pr-9 text-sm focus:ring-2 focus:ring-primary/50 uppercase"
+                  className="h-10 w-full rounded-md border border-input bg-background/50 px-3 pr-9 text-sm focus:ring-2 focus:ring-primary/50 uppercase disabled:opacity-50"
                 />
                 <button
                   type="button"
                   onClick={() => setModalProdutoOpen(true)}
-                  className="absolute right-2 top-2.5 text-muted-foreground hover:text-primary transition-colors"
+                  disabled={carregandoSelecao}
+                  className="absolute right-2 top-2.5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
                   title="Consultar Produto"
                 >
-                  <Search className="h-4 w-4" />
+                  {carregandoSelecao ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </button>
               </div>
               <div className="flex-1 h-10 flex items-center rounded-md border border-input bg-muted/30 px-3 text-sm text-muted-foreground/50">
-                Digite o código ou clique na lupa para consultar...
+                {carregandoSelecao ? 'Carregando saldo atual...' : 'Digite o código ou clique na lupa para consultar...'}
               </div>
             </div>
           </div>

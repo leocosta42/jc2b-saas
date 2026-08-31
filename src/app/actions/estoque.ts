@@ -49,7 +49,7 @@ export async function criarAjusteEstoque(formData: FormData) {
 
     const quantidadeAnterior = produto.quantidade_estoque || 0
     if (quantidadeNova === quantidadeAnterior) {
-      return { error: "O novo saldo é igual ao saldo atual." }
+      return { error: `O saldo de "${produto.nome}" já é ${quantidadeAnterior}. Informe um valor diferente para registrar o ajuste.` }
     }
 
     const { error: insertError } = await supabase
@@ -84,6 +84,24 @@ export async function criarAjusteEstoque(formData: FormData) {
   } catch (err: any) {
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
+}
+
+export async function getSaldoAtualProduto(produtoId: string) {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return null
+
+  const profile = await getProfile(supabase, authData.user.id)
+  if (!profile.tenant_id) return null
+
+  const { data } = await supabase
+    .from('produtos')
+    .select('id, nome, sku, quantidade_estoque')
+    .eq('id', produtoId)
+    .eq('tenant_id', profile.tenant_id)
+    .single()
+
+  return data || null
 }
 
 export async function getProdutosParaConsulta() {
