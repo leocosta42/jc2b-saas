@@ -12,15 +12,15 @@ async function getTenantId(supabase: any, userId: string): Promise<string | null
   return profile?.tenant_id || null
 }
 
-async function fetchTop(supabase: any, table: string, select: string, tenantId: string, limit: number = 100) {
+async function fetchTop(supabase: any, table: string, select: string, tenantId: string, limit: number = 100, orderBy: string = 'nome') {
   const { data, error } = await supabase
     .from(table)
     .select(select)
     .eq('tenant_id', tenantId)
     .eq('ativo', true)
-    .order('nome')
+    .order(orderBy)
     .limit(limit)
-  
+
   if (error) throw error
   return data || []
 }
@@ -37,7 +37,7 @@ export async function getFormData() {
   const [clientesData, vendedoresData, produtosData, tenantRes] = await Promise.all([
     fetchTop(supabase, 'clientes', 'id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email', tenantId),
     fetchTop(supabase, 'vendedores', 'id, nome', tenantId, 1000), // vendedores usually don't exceed 1000
-    fetchTop(supabase, 'produtos', 'id, nome, sku, preco_venda, quantidade_estoque, ncm, peso', tenantId),
+    fetchTop(supabase, 'produtos', 'id, nome, sku, preco_venda, quantidade_estoque, ncm, peso', tenantId, 100, 'sku'),
     supabase.from('tenants').select('cep').eq('id', tenantId).single()
   ])
 
@@ -82,6 +82,24 @@ export async function searchProdutosAPI(query: string) {
     .or(`nome.ilike.%${query}%,sku.ilike.%${query}%`)
     .limit(50)
   
+  return data || []
+}
+
+export async function getProdutosPaginados(offset: number, limit: number = 100) {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return []
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return []
+
+  const { data } = await supabase
+    .from('produtos')
+    .select('id, nome, sku, preco_venda, quantidade_estoque, ncm, peso')
+    .eq('tenant_id', tenantId)
+    .eq('ativo', true)
+    .order('sku')
+    .range(offset, offset + limit - 1)
+
   return data || []
 }
 

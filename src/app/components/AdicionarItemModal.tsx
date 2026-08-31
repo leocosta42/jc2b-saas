@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Search, Plus, X, PackageOpen, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { searchProdutosAPI } from '@/app/actions/vendas'
+import { searchProdutosAPI, getProdutosPaginados } from '@/app/actions/vendas'
+
+const LOTE = 100
 
 interface Produto {
   id: string
@@ -33,6 +35,11 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
   const [quantidade, setQuantidade] = useState<number | string>(1)
   const [desconto, setDesconto] = useState<number | string>(0)
 
+  // Paginacao para "carregar mais ao rolar" (navegacao sem digitar busca) -
+  // listaProdutosInit ja traz o 1o lote (LOTE itens, ordenados por sku)
+  const [carregandoMais, setCarregandoMais] = useState(false)
+  const [todosCarregados, setTodosCarregados] = useState(false)
+
   useEffect(() => {
     if (isOpen) {
       setListaProdutos(listaProdutosInit)
@@ -40,8 +47,28 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
       setProdutoSelecionado(null)
       setQuantidade(1)
       setDesconto(0)
+      setTodosCarregados(listaProdutosInit.length < LOTE)
     }
   }, [isOpen, listaProdutosInit])
+
+  const carregarMaisProdutos = async () => {
+    if (carregandoMais || todosCarregados || busca.trim().length > 0) return
+    setCarregandoMais(true)
+    const res = await getProdutosPaginados(listaProdutos.length, LOTE)
+    setListaProdutos(prev => {
+      const novos = res.filter((r: Produto) => !prev.some(x => x.id === r.id))
+      return [...prev, ...novos]
+    })
+    if (res.length < LOTE) setTodosCarregados(true)
+    setCarregandoMais(false)
+  }
+
+  const handleScrollLista = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 150) {
+      carregarMaisProdutos()
+    }
+  }
 
   // Busca automatica no servidor: a lista local so tem os primeiros produtos
   // carregados (o catalogo pode ter milhares de itens), entao sem isso o
@@ -144,7 +171,7 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
             tabela HTML tem um bug de renderizacao conhecido (linhas
             "vazando" por baixo do cabecalho fixo em certas condicoes de
             scroll), grid evita isso por completo. */}
-        <div className="flex-1 overflow-auto bg-muted/10 min-h-[200px] border-b border-border/50">
+        <div className="flex-1 overflow-auto bg-muted/10 min-h-[200px] border-b border-border/50" onScroll={handleScrollLista}>
           <div role="table" className="w-full text-sm text-left grid grid-cols-[12rem_1fr_5rem_8rem_6rem]">
             <div role="rowgroup" className="contents">
               <div role="row" className="contents">
@@ -196,6 +223,17 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
                       : busca.length > 2
                         ? "Nenhum produto encontrado."
                         : "Digite para buscar produtos..."}
+                  </div>
+                </div>
+              )}
+              {filtrados.length > 0 && busca.trim().length === 0 && (
+                <div role="row" className="contents">
+                  <div role="cell" className="col-span-5 px-4 py-3 text-center text-xs text-muted-foreground">
+                    {carregandoMais
+                      ? "Carregando mais produtos..."
+                      : todosCarregados
+                        ? `Todos os ${listaProdutos.length} produtos carregados.`
+                        : "Role para carregar mais produtos..."}
                   </div>
                 </div>
               )}
