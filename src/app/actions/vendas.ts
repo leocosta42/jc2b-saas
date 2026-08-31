@@ -117,9 +117,12 @@ export async function createDocumento(data: {
     
     if (data.tipo === 'PEDIDO') {
       const produtoIds = data.itens.map(i => i.produto_id)
-      const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque, nome, sku').in('id', produtoIds)
+      const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque, nome, sku').eq('tenant_id', tenantId).in('id', produtoIds)
       produtosCache = produtos || []
 
+      // Checagem otimista (UX rapida). A garantia de fato vem do UPDATE
+      // atomico em ajustar_estoque() mais abaixo, que nao deixa o saldo
+      // ficar negativo mesmo sob concorrencia.
       for (const item of data.itens) {
         const prod = produtosCache.find(p => p.id === item.produto_id)
         if (prod && (prod.quantidade_estoque || 0) < item.quantidade) {
@@ -172,34 +175,30 @@ export async function createDocumento(data: {
       return { error: "Erro ao inserir itens. A operação foi cancelada. " + itensError.message }
     }
 
-    // 3. Se for PEDIDO, precisa dar baixa no estoque
+    // 3. Se for PEDIDO, precisa dar baixa no estoque (atomico, item a item)
     if (data.tipo === 'PEDIDO') {
-      const baixasRealizadas: { id: string, qtd: number }[] = []
-      
+      const baixasRealizadas: { produto_id: string, qtd: number }[] = []
+
       for (const item of data.itens) {
-        const prod = produtosCache.find(p => p.id === item.produto_id)
-          
-        if (prod) {
-          const { error: updateError } = await supabase
-            .from('produtos')
-            .update({ quantidade_estoque: (prod.quantidade_estoque || 0) - item.quantidade })
-            .eq('id', item.produto_id)
-            
-          if (updateError) {
-             // Rollback das baixas já realizadas (usando o valor original do cache)
-             for (const baixa of baixasRealizadas) {
-               const bProd = produtosCache.find(p => p.id === baixa.id)
-               if (bProd) {
-                 await supabase.from('produtos').update({ quantidade_estoque: bProd.quantidade_estoque || 0 }).eq('id', baixa.id)
-               }
-             }
-             // Deletar o pedido e itens
-             await supabase.from('pedidos').delete().eq('id', pedido.id)
-             return { error: "Erro ao atualizar estoque. O pedido foi desfeito para manter a consistência." }
-          } else {
-            baixasRealizadas.push({ id: item.produto_id, qtd: item.quantidade })
+        const { data: novoSaldo, error: rpcError } = await supabase.rpc('ajustar_estoque', {
+          p_produto_id: item.produto_id,
+          p_tenant_id: tenantId,
+          p_delta: -item.quantidade
+        })
+
+        if (rpcError || novoSaldo === null) {
+          // Rollback das baixas já realizadas nesta operação
+          for (const baixa of baixasRealizadas) {
+            await supabase.rpc('ajustar_estoque', { p_produto_id: baixa.produto_id, p_tenant_id: tenantId, p_delta: baixa.qtd })
           }
+          // Deletar o pedido e itens
+          await supabase.from('pedidos').delete().eq('id', pedido.id)
+          const prod = produtosCache.find(p => p.id === item.produto_id)
+          const skuDisplay = prod?.sku ? `[${prod.sku}] ` : ''
+          return { error: `Estoque insuficiente para ${skuDisplay}"${prod?.nome || 'produto'}" no momento da confirmação. O pedido foi desfeito para manter a consistência.` }
         }
+
+        baixasRealizadas.push({ produto_id: item.produto_id, qtd: item.quantidade })
       }
     }
 
@@ -225,11 +224,12 @@ export async function convertToPedido(id: string) {
       .eq('pedido_id', id)
       .eq('tenant_id', tenantId)
 
-    // Validar estoque ANTES de converter
+    // Validar estoque ANTES de converter (checagem otimista - a garantia
+    // final vem do UPDATE atomico em ajustar_estoque() mais abaixo)
     let produtosCache: any[] = []
     if (itens) {
       const produtoIds = itens.map(i => i.produto_id)
-      const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque, nome, sku').in('id', produtoIds)
+      const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque, nome, sku').eq('tenant_id', tenantId).in('id', produtoIds)
       produtosCache = produtos || []
       
       for (const item of itens) {
@@ -250,30 +250,28 @@ export async function convertToPedido(id: string) {
 
     if (error) return { error: error.message }
 
-    // Baixa de estoque com rollback
+    // Baixa de estoque com rollback (atomico, item a item)
     if (itens) {
-      const baixasRealizadas: { id: string, qtd: number }[] = []
-      
+      const baixasRealizadas: { produto_id: string, qtd: number }[] = []
+
       for (const item of itens) {
-        const prod = produtosCache.find(p => p.id === item.produto_id)
-        if (prod) {
-          const { error: updateError } = await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) - item.quantidade }).eq('id', item.produto_id)
-          
-          if (updateError) {
-             // Rollback: restaurar estoque das baixas já feitas (usando valor original)
-             for (const baixa of baixasRealizadas) {
-               const bProd = produtosCache.find(p => p.id === baixa.id)
-               if (bProd) {
-                 await supabase.from('produtos').update({ quantidade_estoque: bProd.quantidade_estoque || 0 }).eq('id', baixa.id)
-               }
-             }
-             // Rollback: Voltar para ORCAMENTO
-             await supabase.from('pedidos').update({ tipo: 'ORCAMENTO', status: 'Aberto' }).eq('id', id)
-             return { error: "Erro ao baixar o estoque. A aprovação do pedido foi cancelada para manter a consistência." }
-          } else {
-            baixasRealizadas.push({ id: item.produto_id, qtd: item.quantidade })
+        const { data: novoSaldo, error: rpcError } = await supabase.rpc('ajustar_estoque', {
+          p_produto_id: item.produto_id,
+          p_tenant_id: tenantId,
+          p_delta: -item.quantidade
+        })
+
+        if (rpcError || novoSaldo === null) {
+          // Rollback: restaurar estoque das baixas já feitas
+          for (const baixa of baixasRealizadas) {
+            await supabase.rpc('ajustar_estoque', { p_produto_id: baixa.produto_id, p_tenant_id: tenantId, p_delta: baixa.qtd })
           }
+          // Rollback: Voltar para ORCAMENTO
+          await supabase.from('pedidos').update({ tipo: 'ORCAMENTO', status: 'Aberto' }).eq('id', id)
+          return { error: "Erro ao baixar o estoque (saldo insuficiente no momento da aprovação). A aprovação do pedido foi cancelada para manter a consistência." }
         }
+
+        baixasRealizadas.push({ produto_id: item.produto_id, qtd: item.quantidade })
       }
     }
 
@@ -303,16 +301,9 @@ export async function deleteDocumento(id: string, tipo: 'ORCAMENTO' | 'PEDIDO') 
         .eq('tenant_id', tenantId)
 
       if (itens && itens.length > 0) {
-        const produtoIds = itens.map(i => i.produto_id)
-        const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque').in('id', produtoIds)
-        const produtosCache = produtos || []
-
-        await Promise.all(itens.map(async (item) => {
-          const prod = produtosCache.find(p => p.id === item.produto_id)
-          if (prod) {
-            await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) + item.quantidade }).eq('id', item.produto_id)
-          }
-        }))
+        await Promise.all(itens.map((item) =>
+          supabase.rpc('ajustar_estoque', { p_produto_id: item.produto_id, p_tenant_id: tenantId, p_delta: item.quantidade })
+        ))
       }
     }
 
@@ -365,21 +356,18 @@ export async function updateDocumento(id: string, data: any) {
     const tenantId = await getTenantId(supabase, authData.user.id)
     if (!tenantId) return { error: "Empresa não encontrada." }
 
-    // 1. Fetch old items to revert stock if PEDIDO
+    // 1. Fetch old items to revert stock if PEDIDO (restauracao atomica)
     if (data.tipo === 'PEDIDO') {
-      const { data: oldItens } = await supabase.from('itens_pedido').select('produto_id, quantidade').eq('pedido_id', id)
+      const { data: oldItens } = await supabase.from('itens_pedido').select('produto_id, quantidade').eq('pedido_id', id).eq('tenant_id', tenantId)
       if (oldItens) {
-        for (const item of oldItens) {
-          const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
-          if (prod) {
-            await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) + item.quantidade }).eq('id', item.produto_id)
-          }
-        }
+        await Promise.all(oldItens.map((item) =>
+          supabase.rpc('ajustar_estoque', { p_produto_id: item.produto_id, p_tenant_id: tenantId, p_delta: item.quantidade })
+        ))
       }
     }
 
     // 2. Delete old items
-    await supabase.from('itens_pedido').delete().eq('pedido_id', id)
+    await supabase.from('itens_pedido').delete().eq('pedido_id', id).eq('tenant_id', tenantId)
 
     // 3. Update pedido
     const { error: pedidoError } = await supabase
@@ -396,6 +384,7 @@ export async function updateDocumento(id: string, data: any) {
         desconto_total: data.desconto_total || 0
       })
       .eq('id', id)
+      .eq('tenant_id', tenantId)
 
     if (pedidoError) return { error: "Erro ao atualizar documento: " + pedidoError.message }
 
@@ -413,13 +402,26 @@ export async function updateDocumento(id: string, data: any) {
     const { error: itensError } = await supabase.from('itens_pedido').insert(itensToInsert)
     if (itensError) return { error: "Erro ao inserir itens: " + itensError.message }
 
-    // 5. If PEDIDO, reduce stock based on new items
+    // 5. If PEDIDO, reduce stock based on new items (atomico, item a item,
+    // com rollback das baixas ja aplicadas nesta operacao caso alguma falhe)
     if (data.tipo === 'PEDIDO') {
+      const baixasRealizadas: { produto_id: string, qtd: number }[] = []
+
       for (const item of data.itens) {
-        const { data: prod } = await supabase.from('produtos').select('quantidade_estoque').eq('id', item.produto_id).single()
-        if (prod) {
-          await supabase.from('produtos').update({ quantidade_estoque: (prod.quantidade_estoque || 0) - item.quantidade }).eq('id', item.produto_id)
+        const { data: novoSaldo, error: rpcError } = await supabase.rpc('ajustar_estoque', {
+          p_produto_id: item.produto_id,
+          p_tenant_id: tenantId,
+          p_delta: -item.quantidade
+        })
+
+        if (rpcError || novoSaldo === null) {
+          for (const baixa of baixasRealizadas) {
+            await supabase.rpc('ajustar_estoque', { p_produto_id: baixa.produto_id, p_tenant_id: tenantId, p_delta: baixa.qtd })
+          }
+          return { error: "Estoque insuficiente para um dos itens no momento de salvar. O documento foi atualizado, mas revise o estoque antes de tentar novamente." }
         }
+
+        baixasRealizadas.push({ produto_id: item.produto_id, qtd: item.quantidade })
       }
     }
 
