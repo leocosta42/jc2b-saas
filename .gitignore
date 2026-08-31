@@ -45,3 +45,6 @@ next-env.d.ts
 /xlsm_extracted/
 /imports/
 modelo.pdf
+
+# backups locais (contem dados reais de clientes - NUNCA commitar)
+/backups/
