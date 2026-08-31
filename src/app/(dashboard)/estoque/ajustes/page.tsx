@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAjustesEstoque, getProdutosParaConsulta } from '@/app/actions/estoque'
 import { AjusteForm } from './ajuste-form'
 import { AjustesHistorico } from './ajustes-historico'
-import { Boxes, ShieldAlert } from 'lucide-react'
+import { Boxes, ShieldAlert, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function AjustesEstoquePage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
@@ -48,6 +48,12 @@ export default async function AjustesEstoquePage({ searchParams }: { searchParam
   return (
     <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 min-h-screen">
       <div>
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <Link href="/estoque" className="hover:text-foreground transition-colors flex items-center">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Voltar
+          </Link>
+        </div>
         <div className="flex items-center gap-2 text-indigo-500 mb-1">
           <Boxes className="h-5 w-5" />
           <span className="font-semibold tracking-wider uppercase text-sm">Módulo de Estoque</span>
