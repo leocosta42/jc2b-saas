@@ -62,12 +62,14 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
 
   if (!isOpen) return null
 
-  // Filtra localmente primeiro
-  const filtrados = listaProdutos.filter(p =>
-    !busca ||
-    (p.sku?.toLowerCase() || '').includes(busca.toLowerCase()) ||
-    p.nome.toLowerCase().includes(busca.toLowerCase())
-  )
+  // Filtra localmente primeiro, depois ordena por codigo do produto
+  const filtrados = listaProdutos
+    .filter(p =>
+      !busca ||
+      (p.sku?.toLowerCase() || '').includes(busca.toLowerCase()) ||
+      p.nome.toLowerCase().includes(busca.toLowerCase())
+    )
+    .sort((a, b) => (a.sku || '').localeCompare(b.sku || '', undefined, { numeric: true }))
 
   const handleSelectProduto = (p: Produto) => {
     setProdutoSelecionado(p)
