@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { EstoqueTable, Produto } from './estoque-table'
-import { Plus, Package } from 'lucide-react'
+import { Plus, Package, SlidersHorizontal } from 'lucide-react'
 import Link from 'next/link'
 
 const mockEstoque: Produto[] = [
@@ -50,14 +50,17 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   let produtos: Produto[] = []
   let totalPages = 1
   let totalCount = 0
-  
+  let isAdmin = false
+
   try {
     const supabase = await createClient()
     const { data: authData } = await supabase.auth.getUser()
-    
+
     if (authData?.user) {
-      const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
-      
+      const { data: profile } = await supabase.from('profiles').select('tenant_id, role').eq('id', authData.user.id).single()
+      const role = profile?.role?.toLowerCase() || ''
+      isAdmin = ['admin', 'gerente', 'dono'].includes(role)
+
       if (profile?.tenant_id) {
         let query = supabase
           .from('produtos')
@@ -121,7 +124,16 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
         </div>
         
         <div className="flex items-center gap-2">
-          <Link 
+          {isAdmin && (
+            <Link
+              href="/estoque/ajustes"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-input bg-background/50 hover:bg-muted h-10 px-4 py-2"
+            >
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Ajustes de Estoque
+            </Link>
+          )}
+          <Link
             href="/estoque/novo"
             className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-indigo-500 text-white hover:bg-indigo-600 shadow-md shadow-indigo-500/20 h-10 px-4 py-2"
           >
