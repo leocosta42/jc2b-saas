@@ -86,7 +86,7 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
     }
 
     onAdicionar({
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       produto_id: produtoSelecionado.id,
       produto_sku: produtoSelecionado.sku || "",
       produto_nome: produtoSelecionado.nome,
@@ -95,6 +95,11 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
       preco_unitario: produtoSelecionado.preco_venda || 0,
       desconto_percentual: Number(desconto) || 0
     })
+
+    toast.success(`${produtoSelecionado.nome} incluído! Selecione outro produto ou feche esta janela.`)
+    setProdutoSelecionado(null)
+    setQuantidade(1)
+    setDesconto(0)
   }
 
   return (
@@ -247,6 +252,15 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
               Selecione um produto na lista acima para informar a quantidade e incluir.
             </div>
           )}
+          <div className="flex justify-end mt-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-9 px-4 text-sm font-medium text-muted-foreground hover:text-foreground border border-border/50 rounded-md hover:bg-muted transition-colors"
+            >
+              Concluir e Fechar
+            </button>
+          </div>
         </div>
 
       </div>

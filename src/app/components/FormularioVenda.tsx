@@ -114,11 +114,9 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   }
 
   const removeItem = (index: number) => {
-    if (itens.length > 1) {
-      const novosItens = [...itens]
-      novosItens.splice(index, 1)
-      setItens(novosItens)
-    }
+    const novosItens = [...itens]
+    novosItens.splice(index, 1)
+    setItens(novosItens)
   }
 
   // Cálculos
@@ -145,6 +143,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
 
     // Validações básicas
     if (!clienteId) return toast.error("Selecione um cliente")
+    if (itens.length === 0) return toast.error("Adicione pelo menos um produto")
     if (itens.some((i: any) => !i.produto_id)) return toast.error("Selecione os produtos para todos os itens")
 
     // Validação de Estoque Apenas para PEDIDOS
@@ -711,8 +710,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         onClose={() => setIsAdicionarModalOpen(false)}
         onAdicionar={(novoItem) => {
           setItens([...itens, novoItem])
-          setIsAdicionarModalOpen(false)
-          
+
           // Se o produto não estiver na lista local, adiciona
           if (!listaProdutos.some(p => p.id === novoItem.produto_id)) {
              searchProdutosAPI(novoItem.produto_sku || novoItem.produto_nome).then(res => {
