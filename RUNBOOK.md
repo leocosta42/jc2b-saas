@@ -11,31 +11,24 @@ Guia de referência para quando algo der errado, ou para qualquer pessoa (você 
 
 ## 1. Backup — como recuperar
 
-### Estado atual
-Não há nenhum backup automático configurado hoje. Se o banco for corrompido ou dados forem apagados por engano, **não há como recuperar** a não ser que você tenha feito algo manualmente.
+### Estado atual: automatizado e gratuito
+Backup diário automático via GitHub Actions (`.github/workflows/backup.yml`), rodando todo dia às 03:00 (horário de Brasília). Ele roda `scripts/backup-db.mjs` (exporta todas as tabelas para JSON via `service_role` key) e envia o resultado para um **repositório GitHub privado separado**, nunca para o repositório público `jc2b-saas`.
 
-### Recomendação principal: ativar backup do Supabase
-É de longe a opção mais simples e confiável — o Supabase já sabe fazer isso corretamente (backup consistente, sem risco de vazar dados).
+**Configuração única (feita por você, uma vez):**
+1. Criar um repositório **privado** vazio no GitHub chamado `jc2b-saas-backups` (github.com/new → marcar "Private"). Se preferir outro nome, ajuste a variável `BACKUP_REPO` no arquivo `.github/workflows/backup.yml`.
+2. Gerar um **fine-grained personal access token** (github.com/settings/tokens → "Fine-grained tokens" → "Generate new token") com acesso restrito **somente** ao repositório `jc2b-saas-backups`, permissão "Contents: Read and write". Isso limita o dano se o token vazar algum dia — ele não teria acesso a nada além desse repositório de backup.
+3. No repositório `jc2b-saas` (o público, da aplicação) → **Settings → Secrets and variables → Actions** → adicionar 3 *secrets*:
+   - `BACKUP_REPO_TOKEN` — o token gerado no passo 2
+   - `NEXT_PUBLIC_SUPABASE_URL` — mesmo valor do `.env.local`
+   - `SUPABASE_SERVICE_ROLE_KEY` — mesmo valor do `.env.local`
 
-1. No [painel do Supabase](https://supabase.com/dashboard/project/tgttjjwjbsqizfsjzcrm) → **Settings → Database → Backups**.
-2. **Plano Free**: sem backups automáticos garantidos (o Supabase pode reter algo por pouco tempo, mas não é uma garantia contratual — não confie nisso).
-3. **Plano Pro (US$25/mês)**: backups diários automáticos com 7 dias de retenção, incluídos. Point-in-time Recovery (restaurar para qualquer segundo dos últimos dias) é um add-on pago à parte, mas o backup diário já cobre "recuperar de ontem".
-4. Restauração: pelo próprio painel (Backups → Restore), sem precisar de comando nenhum. O Supabase avisa antes de sobrescrever.
+Depois disso, o backup roda sozinho todo dia. Você pode testar na hora sem esperar: aba **Actions** do repositório → workflow "Backup diario do banco" → **Run workflow**.
 
-**Dado que este banco já tem dados reais de clientes (CPF/CNPJ, endereço, contato) e é usado em produção, recomendo fortemente o plano Pro só por causa do backup — os R$130/mês são baratos perto do risco de perder a base de clientes/pedidos sem chance de recuperação.**
+### Restaurar a partir de um backup
+Os dumps ficam em `jc2b-saas-backups/AAAA-MM-DD/<tabela>.json`. Restaurar não é automático (é JSON puro, não um dump SQL) — em caso de necessidade real, me chame que eu escrevo um script de restauração específico pro que aconteceu (perda total é diferente de "recuperar só a tabela de clientes", por exemplo).
 
-### Alternativa gratuita (DIY) — se não quiser pagar agora
-Um script que exporta todas as tabelas para arquivos JSON usando a `service_role` key. Está em `scripts/backup-db.mjs` (criado nesta sessão — veja abaixo).
-
-⚠️ **Importante**: rode esse script e guarde o resultado em um lugar **privado** — nunca no repositório público `jc2b-saas` (viraria um vazamento de dados de cliente). Opções seguras: seu computador local, um bucket privado (S3/R2/Google Drive privado), ou um repositório GitHub **privado** separado.
-
-Como rodar manualmente:
-```bash
-node scripts/backup-db.mjs
-# gera uma pasta backups/AAAA-MM-DD/ com um .json por tabela
-```
-
-Para automatizar (ex: 1x por dia), a forma mais simples sem gastar nada é rodar esse script localmente via Agendador de Tarefas do Windows, apontando pra uma pasta fora do repositório. Automatizar via GitHub Actions exigiria um repositório privado separado só para os backups — me avise se quiser que eu monte isso.
+### Retenção
+O script não apaga backups antigos — o repositório privado vai crescer para sempre do jeito que está. Não é urgente (JSON comprime bem no Git, e o volume atual é pequeno), mas se quiser, no futuro posso adicionar uma rotina que mantém só os últimos 30 dias.
 
 ### Recuperação de deploy (não é banco, é o site no ar)
 Se um deploy quebrar o site (ex: bug em produção), reverter é rápido e não mexe no banco:
@@ -107,13 +100,14 @@ Se quiser, posso criar um `docs/ARQUITETURA.md` cobrindo os fluxos principais (p
 
 ---
 
-## Resumo — o que decidir
+## Resumo — plano 100% gratuito
 
-| Item | Ação | Custo | Quem decide |
-|---|---|---|---|
-| Backup do banco | Ativar Supabase Pro (recomendado) ou usar o script DIY | ~R$130/mês ou grátis (com mais esforço manual) | Você |
-| Retenção de logs | Manter Vercel Hobby ou upgrade pra Pro | Grátis ou ~R$100/mês | Você |
-| Rastreamento de erro | Adicionar Sentry (free tier) | Grátis, exige mudança de código | Você aprova, eu implemento |
-| Monitor de uptime | Criar conta UptimeRobot | Grátis | Você (ou eu guio) |
-| Alerta de deploy quebrado | Ativar notificação no Vercel | Grátis | Você (1 clique) |
-| Documentação de arquitetura | Criar `docs/ARQUITETURA.md` | Grátis, meu tempo | Você aprova, eu escrevo |
+| Item | Ação | Status |
+|---|---|---|
+| Backup do banco | GitHub Action diária + repo privado (`scripts/backup-db.mjs`) | ✅ Código pronto — falta você criar o repo privado e os 3 secrets (passo a passo acima) |
+| Rollback de deploy | "Promote to Production" no Vercel | ✅ Já disponível, não precisa configurar nada |
+| Logs de erro | Vercel Runtime Logs + Supabase Logs | ✅ Já disponível, retenção curta no plano gratuito |
+| Rastreamento de erro (Sentry) | Fora do plano por enquanto (free tier existe, mas fica pra depois) | ⏸️ Adiado |
+| Monitor de uptime | Conta grátis no UptimeRobot | ⬜ Pendente — você cria a conta (2 min), me chama se quiser que eu guie passo a passo |
+| Alerta de deploy quebrado | Ativar notificação no Vercel (Settings → Notifications) | ⬜ Pendente — 1 clique seu |
+| Documentação de arquitetura | `docs/ARQUITETURA.md` e `docs/SETUP_DO_ZERO.md` | ⬜ Pendente — aviso se quiser que eu escreva agora |
