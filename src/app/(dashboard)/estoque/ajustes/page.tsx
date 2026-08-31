@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getAjustesEstoque } from '@/app/actions/estoque'
+import { getAjustesEstoque, getProdutosParaConsulta } from '@/app/actions/estoque'
 import { AjusteForm } from './ajuste-form'
 import { AjustesHistorico } from './ajustes-historico'
 import { Boxes, ShieldAlert } from 'lucide-react'
@@ -40,7 +40,10 @@ export default async function AjustesEstoquePage({ searchParams }: { searchParam
     )
   }
 
-  const { data: ajustes, totalPages } = await getAjustesEstoque({ page })
+  const [{ data: ajustes, totalPages }, produtosIniciais] = await Promise.all([
+    getAjustesEstoque({ page }),
+    getProdutosParaConsulta(),
+  ])
 
   return (
     <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 min-h-screen">
@@ -55,7 +58,7 @@ export default async function AjustesEstoquePage({ searchParams }: { searchParam
         </p>
       </div>
 
-      <AjusteForm />
+      <AjusteForm produtosIniciais={produtosIniciais} />
 
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Histórico de Ajustes</h2>

@@ -21,38 +21,49 @@ const MOTIVOS = [
   { value: 'contagem', label: 'Contagem Física' },
 ]
 
-export function AjusteForm() {
+export function AjusteForm({ produtosIniciais }: { produtosIniciais: Produto[] }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const [busca, setBusca] = useState('')
-  const [resultados, setResultados] = useState<Produto[]>([])
-  const [buscando, setBuscando] = useState(false)
+  const [listaProdutos, setListaProdutos] = useState<Produto[]>(produtosIniciais)
+  const [inputCodigo, setInputCodigo] = useState('')
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null)
+
+  const [modalProdutoOpen, setModalProdutoOpen] = useState(false)
+  const [buscaModal, setBuscaModal] = useState('')
 
   const [novoSaldo, setNovoSaldo] = useState<number | string>('')
   const [motivo, setMotivo] = useState('entrada_manual')
   const [observacoes, setObservacoes] = useState('')
 
-  const handleBuscar = async () => {
-    if (busca.trim().length < 2) {
-      toast.error('Digite pelo menos 2 caracteres para buscar.')
-      return
-    }
-    setBuscando(true)
-    const res = await searchProdutosAPI(busca)
-    setBuscando(false)
-    setResultados(res)
-    if (res.length === 0) toast.error('Nenhum produto encontrado.')
-  }
-
   const handleSelecionar = (p: Produto) => {
     setProdutoSelecionado(p)
-    setResultados([])
-    setBusca('')
+    setInputCodigo('')
+    setModalProdutoOpen(false)
+    setBuscaModal('')
     setNovoSaldo(p.quantidade_estoque ?? 0)
     setMotivo('entrada_manual')
     setObservacoes('')
+  }
+
+  const buscarPorCodigo = async (val: string) => {
+    if (!val) return
+    let p = listaProdutos.find((prod) => prod.sku?.toLowerCase() === val.toLowerCase())
+    if (!p) {
+      const res = await searchProdutosAPI(val)
+      if (res.length > 0) {
+        setListaProdutos((prev) => {
+          const novos = res.filter((r: Produto) => !prev.some((x) => x.id === r.id))
+          return [...prev, ...novos]
+        })
+        p = res.find((r: Produto) => r.sku?.toLowerCase() === val.toLowerCase()) || res[0]
+      }
+    }
+    if (p) {
+      handleSelecionar(p)
+    } else {
+      toast.error('Produto não encontrado.')
+    }
   }
 
   const handleConfirmar = () => {
@@ -78,6 +89,7 @@ export function AjusteForm() {
   }
 
   return (
+    <>
     <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden">
       <div className="p-4 border-b border-border/50 bg-muted/20">
         <h3 className="flex items-center gap-2 font-semibold">
@@ -88,56 +100,37 @@ export function AjusteForm() {
 
       <div className="p-4 space-y-4">
         {!produtoSelecionado ? (
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Buscar Produto</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Produto</label>
             <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <div className="relative w-40">
                 <input
                   type="text"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleBuscar() } }}
-                  placeholder="Buscar por código ou descrição..."
-                  className="w-full h-10 rounded-md border border-input bg-background/50 pl-9 pr-3 text-sm focus:ring-2 focus:ring-primary/50"
+                  placeholder="Cód..."
+                  value={inputCodigo}
+                  onChange={(e) => setInputCodigo(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      buscarPorCodigo(e.currentTarget.value)
+                    }
+                  }}
+                  onBlur={(e) => buscarPorCodigo(e.target.value)}
+                  className="h-10 w-full rounded-md border border-input bg-background/50 px-3 pr-9 text-sm focus:ring-2 focus:ring-primary/50 uppercase"
                 />
+                <button
+                  type="button"
+                  onClick={() => setModalProdutoOpen(true)}
+                  className="absolute right-2 top-2.5 text-muted-foreground hover:text-primary transition-colors"
+                  title="Consultar Produto"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleBuscar}
-                disabled={buscando}
-                className="h-10 px-4 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buscar'}
-              </button>
+              <div className="flex-1 h-10 flex items-center rounded-md border border-input bg-muted/30 px-3 text-sm text-muted-foreground/50">
+                Digite o código ou clique na lupa para consultar...
+              </div>
             </div>
-
-            {resultados.length > 0 && (
-              <div className="border border-border/50 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-muted/50 sticky top-0">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Código</th>
-                      <th className="px-3 py-2 font-medium">Descrição</th>
-                      <th className="px-3 py-2 font-medium text-center">Saldo Atual</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/30">
-                    {resultados.map((p) => (
-                      <tr
-                        key={p.id}
-                        onClick={() => handleSelecionar(p)}
-                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                      >
-                        <td className="px-3 py-2 font-medium">{p.sku || '-'}</td>
-                        <td className="px-3 py-2">{p.nome}</td>
-                        <td className="px-3 py-2 text-center">{p.quantidade_estoque ?? 0}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         ) : (
           <div className="space-y-4">
@@ -212,5 +205,92 @@ export function AjusteForm() {
         )}
       </div>
     </div>
+
+    {modalProdutoOpen && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-background rounded-lg shadow-2xl w-full max-w-4xl border border-border flex flex-col h-[600px] max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" />
+              Consulta Padrão - Produto
+            </h2>
+            <button onClick={() => setModalProdutoOpen(false)} className="text-muted-foreground hover:text-foreground">
+              ✕
+            </button>
+          </div>
+          <div className="p-4 border-b border-border bg-muted/10">
+            <input
+              type="text"
+              placeholder="Buscar por código ou descrição..."
+              value={buscaModal}
+              onChange={async (e) => {
+                const val = e.target.value
+                setBuscaModal(val)
+                if (val.length >= 3) {
+                  const res = await searchProdutosAPI(val)
+                  setListaProdutos((prev) => {
+                    const novos = res.filter((r: Produto) => !prev.some((x) => x.id === r.id))
+                    return [...prev, ...novos]
+                  })
+                }
+              }}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 focus:ring-2 focus:ring-primary/50"
+              autoFocus
+            />
+          </div>
+          <div className="flex-1 overflow-auto p-0 bg-background">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted/50 sticky top-0 shadow-sm">
+                <tr>
+                  <th className="px-4 py-2 w-32 font-medium">Código</th>
+                  <th className="px-4 py-2 font-medium">Descrição</th>
+                  <th className="px-4 py-2 w-32 font-medium text-center">Saldo Atual</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {listaProdutos
+                  .filter((p) =>
+                    !buscaModal ||
+                    (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) ||
+                    p.nome.toLowerCase().includes(buscaModal.toLowerCase())
+                  )
+                  .sort((a, b) => (a.sku || '').localeCompare(b.sku || '', undefined, { numeric: true }))
+                  .map((p) => (
+                    <tr
+                      key={p.id}
+                      className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors group"
+                      onClick={() => handleSelecionar(p)}
+                    >
+                      <td className="px-4 py-2 font-medium">{p.sku || '-'}</td>
+                      <td className="px-4 py-2 group-hover:font-medium">{p.nome}</td>
+                      <td className="px-4 py-2 text-center">{p.quantidade_estoque ?? 0}</td>
+                    </tr>
+                  ))}
+                {listaProdutos.filter((p) =>
+                  !buscaModal ||
+                  (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) ||
+                  p.nome.toLowerCase().includes(buscaModal.toLowerCase())
+                ).length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                      Nenhum produto encontrado na consulta.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-4 border-t border-border flex justify-end bg-muted/30">
+            <button
+              onClick={() => setModalProdutoOpen(false)}
+              className="px-6 py-2 bg-background border border-border text-foreground rounded-md hover:bg-muted font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

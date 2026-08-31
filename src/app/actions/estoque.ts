@@ -86,6 +86,25 @@ export async function criarAjusteEstoque(formData: FormData) {
   }
 }
 
+export async function getProdutosParaConsulta() {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return []
+
+  const profile = await getProfile(supabase, authData.user.id)
+  if (!profile.tenant_id) return []
+
+  const { data } = await supabase
+    .from('produtos')
+    .select('id, nome, sku, quantidade_estoque')
+    .eq('tenant_id', profile.tenant_id)
+    .eq('ativo', true)
+    .order('sku')
+    .limit(200)
+
+  return data || []
+}
+
 export async function getAjustesEstoque({ page = 1, produtoId }: { page?: number; produtoId?: string } = {}) {
   const supabase = await createClient()
   const { data: authData } = await supabase.auth.getUser()
