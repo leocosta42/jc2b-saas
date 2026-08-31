@@ -75,7 +75,7 @@ const modules = [
     borderGlow: "group-hover:border-indigo-500/30",
     links: [
       { label: "Cadastrar Produto", href: "/estoque/novo", icon: <PackagePlus className="h-4 w-4" /> },
-      { label: "Inventário", href: "/estoque", icon: <Boxes className="h-4 w-4" /> },
+      { label: "Inventário", href: "/estoque/ajustes", icon: <Boxes className="h-4 w-4" /> },
     ]
   },
   {
