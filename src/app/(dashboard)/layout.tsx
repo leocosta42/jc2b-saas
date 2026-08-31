@@ -1,15 +1,29 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { LayoutDashboard, FileSpreadsheet, Briefcase, Contact, Truck, Boxes, LineChart, SlidersHorizontal } from 'lucide-react'
+import { LayoutDashboard, FileSpreadsheet, Briefcase, Contact, Truck, Boxes, LineChart, SlidersHorizontal, Shield } from 'lucide-react'
 import { LogoutButton } from './components/logout-button'
+import { createClient } from '@/lib/supabase/server'
 
 import { MobileNav } from './components/mobile-nav'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  let isAdmin = false
+  if (authData?.user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authData.user.id)
+      .single()
+    const role = profile?.role?.toLowerCase() || ''
+    isAdmin = ['admin', 'gerente', 'dono'].includes(role)
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
@@ -46,6 +60,12 @@ export default function DashboardLayout({
             <LineChart className="h-5 w-5" />
             Estatísticas
           </Link>
+          {isAdmin && (
+            <Link href="/equipe" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-teal-500/10 hover:text-teal-500 transition-all">
+              <Shield className="h-5 w-5" />
+              Equipe / Acessos
+            </Link>
+          )}
           <Link href="/configuracoes" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-slate-500/10 hover:text-slate-500 transition-all">
             <SlidersHorizontal className="h-5 w-5" />
             Configurações

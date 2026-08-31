@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dados sensiveis / planilhas de origem (contem PII de clientes e fornecedores)
+*.xlsm
+/xlsm_extracted/
+/imports/
+modelo.pdf

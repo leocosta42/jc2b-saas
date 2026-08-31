@@ -12,11 +12,16 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 // ================================================================
-// ⚙️ CONFIGURAÇÃO — Substitua a chave service_role abaixo
+// ⚙️ CONFIGURAÇÃO — lidas de .env.local (nunca hardcode a service_role key)
 // Acesse: Supabase > Settings > API > service_role key
 // ================================================================
-const SUPABASE_URL = 'https://tgttjjwjbsqizfsjzcrm.supabase.co'
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRndHRqandqYnNxaXpmc2p6Y3JtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzEwMTIzNywiZXhwIjoyMTAyNjc3MjM3fQ.sl9bwSflLfIzfAIRpnnyK-JrQGm4YryO82RFjIOQYBg'
+process.loadEnvFile('.env.local')
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('❌ Defina NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY em .env.local')
+  process.exit(1)
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const IMPORTS_DIR = join(__dirname, 'imports')
@@ -469,12 +474,6 @@ async function main() {
   console.log('  JC2B ERP — SCRIPT DE IMPORTAÇÃO DE DADOS')
   console.log('='.repeat(60))
 
-  // Validar chave
-  if (SUPABASE_SERVICE_KEY === 'COLE_SUA_CHAVE_SERVICE_ROLE_AQUI') {
-    console.error('\n❌ ERRO: Você precisa configurar a SUPABASE_SERVICE_KEY no script!')
-    console.error('   Acesse: Supabase > Settings > API > service_role key\n')
-    process.exit(1)
-  }
 
   try {
     console.log('\n🔑 Buscando dados da empresa...')

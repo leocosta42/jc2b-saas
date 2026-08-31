@@ -31,7 +31,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         password,
         options: { data: { full_name: name } }
       })
-      if (error) return redirect(`/login?mode=register&message=${error.message}`)
+      if (error) return redirect(`/login?mode=register&message=${encodeURIComponent('Não foi possível criar a conta. Verifique os dados e tente novamente.')}`)
       return redirect('/login?message=Conta criada com sucesso! Você já pode fazer login.')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })

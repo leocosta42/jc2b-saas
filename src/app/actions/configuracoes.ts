@@ -3,13 +3,18 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
-async function getTenantId(supabase: any, userId: string): Promise<string | null> {
+async function getProfile(supabase: any, userId: string) {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id')
+    .select('tenant_id, role')
     .eq('id', userId)
     .single()
-  return profile?.tenant_id || null
+  return profile || { tenant_id: null, role: null }
+}
+
+async function getTenantId(supabase: any, userId: string): Promise<string | null> {
+  const profile = await getProfile(supabase, userId)
+  return profile.tenant_id
 }
 
 export async function getTenantConfig() {
@@ -40,8 +45,14 @@ export async function updateTenantConfig(formData: FormData) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada." }
+    const profile = await getProfile(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+
+    const role = profile.role?.toLowerCase() || ''
+    const isAdmin = ['admin', 'gerente', 'dono'].includes(role)
+    if (!isAdmin) return { error: "Sem permissão para alterar as configurações da empresa." }
+
+    const tenantId = profile.tenant_id
 
     const rawData = {
       name: formData.get("name") as string,

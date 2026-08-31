@@ -28,6 +28,26 @@ export function ProdutoForm({
   const [custo, setCusto] = useState(produtoCopiar?.preco_custo || 0)
   const [venda, setVenda] = useState(produtoCopiar?.preco_venda || 0)
 
+  // Peso logic
+  const calcInitialPeso = (pesoKg: number | undefined) => {
+    if (!pesoKg) return { qtd: "", uni: "KG" }
+    if (pesoKg < 1 && pesoKg > 0) {
+      if (pesoKg < 0.001) return { qtd: pesoKg * 1000000, uni: "MG" }
+      return { qtd: pesoKg * 1000, uni: "G" }
+    }
+    return { qtd: pesoKg, uni: "KG" }
+  }
+  const initPeso = calcInitialPeso(produtoCopiar?.peso)
+  const [pesoQtd, setPesoQtd] = useState<number | string>(initPeso.qtd)
+  const [pesoUni, setPesoUni] = useState(initPeso.uni)
+
+  const calcPesoKg = (qtd: number, uni: string) => {
+    if (uni === 'MG') return qtd / 1000000
+    if (uni === 'G') return qtd / 1000
+    return qtd
+  }
+  const pesoFinalKg = calcPesoKg(Number(pesoQtd) || 0, pesoUni)
+
   const lucroReais = venda - custo
   const lucroPercent = custo > 0 ? (lucroReais / custo) * 100 : (venda > 0 ? 100 : 0)
 
@@ -113,11 +133,34 @@ export function ProdutoForm({
             <input name="ncm" type="text" defaultValue={produtoCopiar?.ncm || ""} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="Ex: 7318.15.00" />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Peso (KG)</label>
-            <div className="relative">
-              <input name="peso" type="number" step="0.001" defaultValue={produtoCopiar?.peso || ""} className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-3 pr-10 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0.000" />
-              <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">KG</span>
+            <label className="text-sm font-medium">Peso Unitário</label>
+            <div className="flex gap-2">
+              <input 
+                type="number" 
+                step="0.001" 
+                min="0"
+                value={pesoQtd} 
+                onChange={e => {
+                  const val = Number(e.target.value)
+                  if (val >= 0) setPesoQtd(e.target.value)
+                }}
+                className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" 
+                placeholder="0" 
+              />
+              <select 
+                value={pesoUni}
+                onChange={e => setPesoUni(e.target.value)}
+                className="flex h-10 w-24 rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500"
+              >
+                <option value="KG">KG</option>
+                <option value="G">G</option>
+                <option value="MG">MG</option>
+              </select>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Convertido p/ Frete: <b>{pesoFinalKg.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 6 })} KG</b>
+            </p>
+            <input type="hidden" name="peso" value={pesoFinalKg} />
           </div>
           <div className="space-y-2 lg:col-span-1">
             <label htmlFor="bloqueado" className="text-sm font-medium text-red-500">Status de Bloqueio</label>
@@ -140,14 +183,20 @@ export function ProdutoForm({
             <label className="text-sm font-medium">Valor Custo R$</label>
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">R$</span>
-              <input name="preco_custo" type="number" step="0.01" value={custo || ''} onChange={(e) => setCusto(Number(e.target.value))} className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0.00" />
+              <input name="preco_custo" type="number" step="0.01" min="0" value={custo || ''} onChange={(e) => {
+                const val = Number(e.target.value)
+                if (val >= 0) setCusto(val)
+              }} className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0.00" />
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Valor Venda R$ <span className="text-destructive">*</span></label>
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">R$</span>
-              <input name="preco_venda" type="number" step="0.01" value={venda || ''} onChange={(e) => setVenda(Number(e.target.value))} className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0.00" required />
+              <input name="preco_venda" type="number" step="0.01" min="0" value={venda || ''} onChange={(e) => {
+                const val = Number(e.target.value)
+                if (val >= 0) setVenda(val)
+              }} className="flex h-10 w-full rounded-md border border-input bg-background/50 pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0.00" required />
             </div>
           </div>
           <div className="space-y-2">
@@ -173,7 +222,9 @@ export function ProdutoForm({
         <div className="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
             <label className="text-sm font-medium">Saldo Estoque</label>
-            <input name="quantidade_estoque" type="number" defaultValue={produtoCopiar ? 0 : "0"} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0" />
+            <input name="quantidade_estoque" type="number" min="0" defaultValue={produtoCopiar ? 0 : "0"} className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500" placeholder="0" onInput={(e) => {
+              if (Number(e.currentTarget.value) < 0) e.currentTarget.value = '0'
+            }} />
           </div>
           <div className="space-y-2 lg:col-span-2">
             <label className="text-sm font-medium">Pesquisar Fornecedor</label>

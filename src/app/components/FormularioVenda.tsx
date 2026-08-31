@@ -3,10 +3,12 @@
 import { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createDocumento, updateDocumento, searchClientesAPI, searchProdutosAPI } from "@/app/actions/vendas"
-import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2, Search, Truck } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Calendar, FileText, User, ShoppingCart, Calculator, Tag, Loader2, Search, Truck, Edit } from "lucide-react"
 import { simularMelhorEnvio } from "@/app/actions/frete"
 import Link from "next/link"
 import { toast } from "sonner"
+import { EditarItemModal } from "./EditarItemModal"
+import { AdicionarItemModal } from "./AdicionarItemModal"
 
 interface Props {
   tipo: 'ORCAMENTO' | 'PEDIDO'
@@ -69,11 +71,12 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         desconto_percentual: ip.desconto_percentual || 0
       }))
     }
-    return [{ id: Date.now(), produto_id: "", produto_sku: "", produto_nome: "", quantidade: 1, unidade_medida: "UN", preco_unitario: 0, desconto_percentual: 0 }]
+    return []
   })
-  const [modalProdutoOpen, setModalProdutoOpen] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null})
+  
+  const [isAdicionarModalOpen, setIsAdicionarModalOpen] = useState(false)
   const [modalUmOpen, setModalUmOpen] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null})
-  const [buscaModal, setBuscaModal] = useState("")
+  const [modalEditItemOpen, setModalEditItemOpen] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null})
 
   const [modalClienteOpen, setModalClienteOpen] = useState(false)
   const [buscaModalCliente, setBuscaModalCliente] = useState("")
@@ -97,7 +100,12 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
 
   const updateItem = (index: number, field: string, value: any) => {
     const novosItens = [...itens]
-    novosItens[index] = { ...novosItens[index], [field]: value }
+    let finalValue = value
+    if (['quantidade', 'preco_unitario', 'desconto_percentual'].includes(field)) {
+      const num = Number(value)
+      if (num < 0) finalValue = 0 // Reseta para zero se for negativo
+    }
+    novosItens[index] = { ...novosItens[index], [field]: finalValue }
     setItens(novosItens)
   }
 
@@ -197,7 +205,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   const backLink = tipo === 'ORCAMENTO' ? '/orcamentos' : '/pedidos'
 
   return (
-    <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 min-h-screen max-w-6xl mx-auto">
+    <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 min-h-screen max-w-[1600px] w-full mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -226,9 +234,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna Principal (Esquerda) */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="space-y-6">
           
           {/* Dados do Cliente */}
           <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden">
@@ -336,21 +342,21 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
               </h3>
             </div>
             
-            <div className="p-0 overflow-x-auto">
-              <table className="w-full text-sm text-left min-w-[1000px]">
-                <thead className="bg-muted/30 border-b text-xs uppercase text-muted-foreground">
+            <div className="p-0 overflow-x-auto overflow-y-auto max-h-[60vh] relative">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-muted/30 border-b uppercase text-muted-foreground sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th className="px-4 py-3 min-w-[60px] w-10">Item</th>
-                    <th className="px-4 py-3 min-w-[160px] w-40">Produto</th>
-                    <th className="px-4 py-3 min-w-[250px]">Descrição</th>
-                    <th className="px-4 py-3 min-w-[100px] w-24">NCM</th>
-                    <th className="px-4 py-3 min-w-[80px] w-20">Peso</th>
-                    <th className="px-4 py-3 min-w-[80px] w-20">U.M</th>
-                    <th className="px-4 py-3 min-w-[100px] w-24">Qtde</th>
-                    <th className="px-4 py-3 min-w-[120px] w-32">V. Unit (R$)</th>
-                    <th className="px-4 py-3 min-w-[100px] w-24">Desc %</th>
-                    <th className="px-4 py-3 min-w-[120px] w-32">Subtotal</th>
-                    <th className="px-4 py-3 min-w-[50px] w-10"></th>
+                    <th className="px-2 py-2 w-8 text-center">Item</th>
+                    <th className="px-2 py-2 w-28">Código</th>
+                    <th className="px-2 py-2 min-w-[150px]">Descrição</th>
+                    <th className="px-2 py-2 w-20 text-center">NCM</th>
+                    <th className="px-2 py-2 w-20 text-center">Peso</th>
+                    <th className="px-2 py-2 w-16 text-center">U.M</th>
+                    <th className="px-2 py-2 w-16 text-center">Qtd</th>
+                    <th className="px-2 py-2 w-24 text-right">R$ Un.</th>
+                    <th className="px-2 py-2 w-16 text-center">Desc %</th>
+                    <th className="px-2 py-2 w-28 text-right">Subtotal</th>
+                    <th className="px-2 py-2 w-16 text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
@@ -360,125 +366,90 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                     
                     return (
                       <tr key={item.id} className="hover:bg-muted/20">
-                        <td className="px-4 py-2 text-center font-medium">{index + 1}</td>
-                        <td className="px-4 py-2">
-                          <div className="relative w-full">
-                            <input 
-                              type="text"
-                              value={item.produto_sku || ''}
-                              onChange={(e) => {
-                                const novosItens = [...itens];
-                                novosItens[index].produto_sku = e.target.value;
-                                setItens(novosItens);
-                              }}
-                              onKeyDown={async (e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault()
-                                  const val = e.currentTarget.value
-                                  if (!val) {
-                                    handleProdutoChange(index, "")
-                                    return
-                                  }
-                                  let p = listaProdutos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
-                                  if (!p) {
-                                    const res = await searchProdutosAPI(val)
-                                    if (res.length > 0) {
-                                      setListaProdutos(prev => {
-                                        const newP = res.filter(r => !prev.some(x => x.id === r.id))
-                                        return [...prev, ...newP]
-                                      })
-                                      p = res.find(prod => prod.sku?.toLowerCase() === val.toLowerCase()) || res[0]
-                                    }
-                                  }
-                                  if (p) {
-                                    handleProdutoChange(index, p.id)
-                                  } else {
-                                    toast.error("Produto não encontrado pelo código.")
-                                    handleProdutoChange(index, "")
-                                  }
-                                }
-                              }}
-                              onBlur={async (e) => {
-                                const val = e.target.value
-                                if (!val) {
-                                  handleProdutoChange(index, "")
-                                  return
-                                }
-                                let p = listaProdutos.find(prod => prod.sku?.toLowerCase() === val.toLowerCase());
-                                if (!p) {
-                                  const res = await searchProdutosAPI(val)
-                                  if (res.length > 0) {
-                                    setListaProdutos(prev => {
-                                      const newP = res.filter(r => !prev.some(x => x.id === r.id))
-                                      return [...prev, ...newP]
-                                    })
-                                    p = res.find(prod => prod.sku?.toLowerCase() === val.toLowerCase()) || res[0]
-                                  }
-                                }
-                                if (p) {
-                                  updateItem(index, 'produto_id', '');
-                                  updateItem(index, 'produto_nome', '');
-                                  updateItem(index, 'preco_unitario', 0);
-                                }
-                              }}
-                              placeholder="Cód..."
-                              className="w-full h-8 rounded border border-border/50 bg-background pl-2 pr-8 text-sm focus:ring-1 focus:ring-primary/50 uppercase"
-                            />
-                            <button 
-                              type="button"
-                              onClick={() => setModalProdutoOpen({isOpen: true, index})}
-                              className="absolute right-1 top-1 h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                              title="Consultar Produto"
-                            >
-                              <Search className="h-4 w-4" />
-                            </button>
+                        <td className="px-2 py-1 text-center font-medium">{index + 1}</td>
+                        <td className="px-2 py-1">
+                          <div className="w-full px-1 py-1 text-foreground truncate">
+                            {item.produto_sku || <span className="text-muted-foreground/50">-</span>}
                           </div>
                         </td>
-                        <td className="px-4 py-2">
-                          <div className="w-full min-h-8 px-2 py-1.5 text-sm text-foreground truncate select-none">
+                        <td className="px-2 py-1">
+                          <div className="w-full px-1 py-1 text-foreground truncate select-none font-medium">
                             {item.produto_nome || <span className="text-muted-foreground/50 italic">Selecione...</span>}
                           </div>
                         </td>
-                        <td className="px-4 py-2 text-center text-xs text-muted-foreground">
+                        <td className="px-2 py-1 text-center text-muted-foreground">
                           {pData?.ncm || '-'}
                         </td>
-                        <td className="px-4 py-2 text-center text-xs text-muted-foreground">
+                        <td className="px-2 py-1 text-center text-muted-foreground">
                           {pData?.peso ? `${pData.peso} kg` : '-'}
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-2 py-1">
                           <div className="relative w-full">
                             <input 
                               type="text" 
                               value={item.unidade_medida} 
                               onChange={(e) => updateItem(index, 'unidade_medida', e.target.value.toUpperCase())} 
-                              className="w-full h-8 rounded border border-border/50 bg-background pl-2 pr-7 text-center uppercase text-sm" 
+                              className="w-full h-7 rounded border border-border/50 bg-background pl-1 pr-5 text-center uppercase text-xs" 
                             />
                             <button 
                               type="button"
                               onClick={() => setModalUmOpen({isOpen: true, index})}
-                              className="absolute right-1 top-1 h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                              className="absolute right-0.5 top-1 h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
                               title="Consultar U.M"
                             >
                               <Search className="h-3 w-3" />
                             </button>
                           </div>
                         </td>
-                        <td className="px-4 py-2">
-                          <input type="number" min="1" value={item.quantidade} onChange={(e) => updateItem(index, 'quantidade', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-center" />
+                        <td className="px-2 py-1">
+                          <div 
+                            className="w-full px-1 text-center font-medium text-foreground cursor-pointer hover:text-indigo-500 transition-colors"
+                            onClick={() => setModalEditItemOpen({isOpen: true, index})}
+                            title="Clique para editar"
+                          >
+                            {item.quantidade}
+                          </div>
                         </td>
-                        <td className="px-4 py-2">
-                          <input type="number" step="0.01" value={item.preco_unitario} onChange={(e) => updateItem(index, 'preco_unitario', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-right" />
+                        <td className="px-2 py-1">
+                          <div 
+                            className="w-full px-1 text-right text-muted-foreground cursor-pointer hover:text-indigo-500 transition-colors"
+                            onClick={() => setModalEditItemOpen({isOpen: true, index})}
+                            title="Clique para editar"
+                          >
+                            {Number(item.preco_unitario).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
                         </td>
-                        <td className="px-4 py-2">
-                          <input type="number" step="0.1" min="0" max="100" value={item.desconto_percentual} onChange={(e) => updateItem(index, 'desconto_percentual', e.target.value)} className="w-full h-8 rounded border border-border/50 bg-background px-2 text-center" />
+                        <td className="px-2 py-1">
+                          <div 
+                            className="w-full px-1 text-center text-muted-foreground cursor-pointer hover:text-indigo-500 transition-colors"
+                            onClick={() => setModalEditItemOpen({isOpen: true, index})}
+                            title="Clique para editar"
+                          >
+                            {item.desconto_percentual > 0 ? `${item.desconto_percentual}%` : '-'}
+                          </div>
                         </td>
-                        <td className="px-4 py-2 text-right font-medium text-foreground">
+                        <td className="px-2 py-1 text-right font-medium text-foreground">
                           {sub.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </td>
-                        <td className="px-4 py-2 text-center">
-                          <button onClick={() => removeItem(index)} className="text-muted-foreground hover:text-red-500 transition-colors p-1" title="Remover item">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                        <td className="px-2 py-1">
+                          <div className="flex items-center justify-center gap-1">
+                            <button 
+                              type="button"
+                              onClick={() => setModalEditItemOpen({isOpen: true, index})} 
+                              className="p-1 text-indigo-500 hover:bg-indigo-50 rounded-md transition-colors"
+                              title="Editar"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => removeItem(index)} 
+                              className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" 
+                              title="Remover"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -487,7 +458,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
               </table>
             </div>
             <div className="p-4 border-t border-border/50 bg-muted/10">
-              <button onClick={addItem} type="button" className="text-sm font-medium flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
+              <button onClick={() => setIsAdicionarModalOpen(true)} type="button" className="text-sm font-medium flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
                 <Plus className="h-4 w-4" /> Adicionar Produto
               </button>
             </div>
@@ -512,14 +483,9 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
               </div>
             </div>
           </div>
-
-        </div>
-
-        {/* Coluna Lateral (Direita) */}
-        <div className="space-y-6">
           
           {/* Resumo / Totais */}
-          <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden sticky top-6">
+          <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden flex flex-col h-full">
             <div className="p-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
               <h3 className="flex items-center gap-2 font-semibold">
                 <Calculator className={`h-4 w-4 ${corTema}`} />
@@ -567,11 +533,11 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                 <div className="py-2 border-t border-border/50 space-y-2">
                   <span className="text-sm text-muted-foreground block">Dimensões da Caixa (C x L x A) cm</span>
                   <div className="flex items-center gap-1">
-                    <input type="number" value={dimC} onChange={e => setDimC(Number(e.target.value) || 0)} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Comprimento" />
+                    <input type="number" min="0" value={dimC} onChange={e => setDimC(Math.max(0, Number(e.target.value) || 0))} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Comprimento" />
                     <span className="text-muted-foreground text-xs">x</span>
-                    <input type="number" value={dimL} onChange={e => setDimL(Number(e.target.value) || 0)} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Largura" />
+                    <input type="number" min="0" value={dimL} onChange={e => setDimL(Math.max(0, Number(e.target.value) || 0))} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Largura" />
                     <span className="text-muted-foreground text-xs">x</span>
-                    <input type="number" value={dimA} onChange={e => setDimA(Number(e.target.value) || 0)} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Altura" />
+                    <input type="number" min="0" value={dimA} onChange={e => setDimA(Math.max(0, Number(e.target.value) || 0))} className="min-w-0 flex-1 h-8 rounded-md border border-input bg-background/50 text-center text-sm" title="Altura" />
                   </div>
                 </div>
 
@@ -648,7 +614,6 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
           </div>
 
         </div>
-      </div>
 
       {/* Modal Consulta Cliente */}
       {modalClienteOpen && (
@@ -739,106 +704,28 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         </div>
       )}
 
-      {/* Modal Consulta Produto (Estilo Protheus) */}
-      {modalProdutoOpen.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-background rounded-lg shadow-2xl w-full max-w-4xl border border-border flex flex-col h-[600px] max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Search className="h-5 w-5 text-primary" />
-                Consulta Padrão - Produto
-              </h2>
-              <button onClick={() => setModalProdutoOpen({isOpen: false, index: null})} className="text-muted-foreground hover:text-foreground">
-                ✕
-              </button>
-            </div>
-            <div className="p-4 border-b border-border bg-muted/10">
-              <input 
-                type="text" 
-                placeholder="Buscar por código ou descrição..." 
-                value={buscaModal}
-                onChange={async (e) => {
-                  const val = e.target.value
-                  setBuscaModal(val)
-                  if (val.length >= 3) {
-                    const res = await searchProdutosAPI(val)
-                    setListaProdutos(prev => {
-                      const newP = res.filter(r => !prev.some(p => p.id === r.id))
-                      return [...prev, ...newP]
-                    })
-                  }
-                }}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 focus:ring-2 focus:ring-primary/50"
-                autoFocus
-              />
-            </div>
-            <div className="flex-1 overflow-auto p-0 bg-background">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 sticky top-0 shadow-sm">
-                  <tr>
-                    <th className="px-4 py-2 w-48 font-medium">Código</th>
-                    <th className="px-4 py-2 font-medium">Descrição</th>
-                    <th className="px-4 py-2 w-24 text-center font-medium">Estoque</th>
-                    <th className="px-4 py-2 w-32 text-right font-medium">Preço</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/30">
-                  {listaProdutos
-                    .filter(p => !buscaModal || (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) || p.nome.toLowerCase().includes(buscaModal.toLowerCase()))
-                    .map(p => (
-                      <tr 
-                        key={p.id} 
-                        className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors group"
-                        onClick={() => {
-                          if (modalProdutoOpen.index !== null) {
-                            handleProdutoChange(modalProdutoOpen.index, p.id)
-                            updateItem(modalProdutoOpen.index, 'produto_nome', p.nome)
-
-                            if (tipo === 'PEDIDO' && (p.quantidade_estoque || 0) <= 0) {
-                              toast.warning(`Atenção: O produto ${p.nome} está sem estoque!`);
-                            }
-                          }
-                          setModalProdutoOpen({isOpen: false, index: null})
-                          setBuscaModal("")
-                        }}
-                      >
-                        <td className="px-4 py-2 font-medium">{p.sku || '-'}</td>
-                        <td className="px-4 py-2 group-hover:font-medium">{p.nome}</td>
-                        <td className="px-4 py-2 text-center">
-                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                            (p.quantidade_estoque || 0) <= 0 
-                              ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
-                              : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                          }`}>
-                            {p.quantidade_estoque || 0}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          {(p.preco_venda || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </td>
-                      </tr>
-                    ))}
-                    {listaProdutos.filter(p => !buscaModal || (p.sku?.toLowerCase() || '').includes(buscaModal.toLowerCase()) || p.nome.toLowerCase().includes(buscaModal.toLowerCase())).length === 0 && (
-                      <tr>
-                        <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
-                          Nenhum produto encontrado na consulta.
-                        </td>
-                      </tr>
-                    )}
-                </tbody>
-              </table>
-            </div>
-            <div className="p-4 border-t border-border flex justify-end bg-muted/30">
-              <button 
-                onClick={() => setModalProdutoOpen({isOpen: false, index: null})}
-                className="px-6 py-2 bg-background border border-border text-foreground rounded-md hover:bg-muted font-medium transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdicionarItemModal
+        isOpen={isAdicionarModalOpen}
+        tipo={tipo}
+        listaProdutosInit={listaProdutos}
+        onClose={() => setIsAdicionarModalOpen(false)}
+        onAdicionar={(novoItem) => {
+          setItens([...itens, novoItem])
+          setIsAdicionarModalOpen(false)
+          
+          // Se o produto não estiver na lista local, adiciona
+          if (!listaProdutos.some(p => p.id === novoItem.produto_id)) {
+             searchProdutosAPI(novoItem.produto_sku || novoItem.produto_nome).then(res => {
+               if (res.length > 0) {
+                 setListaProdutos(prev => {
+                    const newP = res.filter(r => !prev.some(x => x.id === r.id))
+                    return [...prev, ...newP]
+                 })
+               }
+             })
+          }
+        }}
+      />
 
       {/* Modal U.M */}
       {modalUmOpen.isOpen && (
@@ -932,6 +819,20 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         </div>
       )}
 
+      {/* Modais Exibidos Fora do Fluxo da Página */}
+      <EditarItemModal 
+        isOpen={modalEditItemOpen.isOpen}
+        item={modalEditItemOpen.index !== null ? itens[modalEditItemOpen.index] : null}
+        onClose={() => setModalEditItemOpen({ isOpen: false, index: null })}
+        onSalvar={(itemAtualizado) => {
+          if (modalEditItemOpen.index !== null) {
+            const novosItens = [...itens]
+            novosItens[modalEditItemOpen.index] = itemAtualizado
+            setItens(novosItens)
+          }
+          setModalEditItemOpen({ isOpen: false, index: null })
+        }}
+      />
     </div>
   )
 }

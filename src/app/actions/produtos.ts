@@ -21,7 +21,8 @@ export async function createProduto(formData: FormData) {
     const profile = await getTenantAndRole(supabase, authData.user.id)
     if (!profile.tenant_id) return { error: "Empresa não encontrada." }
     const tenantId = profile.tenant_id
-    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
+    const role = profile.role?.toLowerCase() || ''
+    const isAdmin = ['admin', 'gerente', 'dono'].includes(role) || !profile.role // Se não tiver role definida, assumimos admin temporariamente para evitar o bug do estoque zerado
 
     const codigo = formData.get("codigo") as string
     const descricao = formData.get("descricao") as string
@@ -32,6 +33,18 @@ export async function createProduto(formData: FormData) {
     const fornecedor_id = formData.get("fornecedor_id") as string
 
     if (!descricao) return { error: "A descrição é obrigatória." }
+
+    // Verifica duplicidade
+    const { data: existing } = await supabase
+      .from('produtos')
+      .select('id, sku')
+      .eq('tenant_id', tenantId)
+      .eq('nome', descricao)
+      .maybeSingle()
+      
+    if (existing) {
+      return { error: `Já existe um produto cadastrado com esta descrição (Código: ${existing.sku || '-'})` }
+    }
 
     const insertPayload: any = {
         tenant_id: tenantId,
@@ -79,7 +92,8 @@ export async function updateProduto(id: string, formData: FormData) {
     const profile = await getTenantAndRole(supabase, authData.user.id)
     if (!profile.tenant_id) return { error: "Empresa não encontrada." }
     const tenantId = profile.tenant_id
-    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
+    const role = profile.role?.toLowerCase() || ''
+    const isAdmin = ['admin', 'gerente', 'dono'].includes(role) || !profile.role
 
     const codigo = formData.get("codigo") as string
     const descricao = formData.get("descricao") as string
@@ -90,6 +104,19 @@ export async function updateProduto(id: string, formData: FormData) {
     const fornecedor_id = formData.get("fornecedor_id") as string
 
     if (!descricao) return { error: "A descrição é obrigatória." }
+
+    // Verifica duplicidade
+    const { data: existing } = await supabase
+      .from('produtos')
+      .select('id, sku')
+      .eq('tenant_id', tenantId)
+      .eq('nome', descricao)
+      .neq('id', id)
+      .maybeSingle()
+      
+    if (existing) {
+      return { error: `Já existe um outro produto cadastrado com esta descrição (Código: ${existing.sku || '-'})` }
+    }
 
     const updatePayload: any = {
         sku: codigo,
