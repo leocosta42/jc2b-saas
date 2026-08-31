@@ -5,7 +5,7 @@ import {
   Briefcase, Truck, Factory,
   FileSpreadsheet, Calculator,
   ShoppingBag, Receipt,
-  Boxes, PackagePlus, ArrowRightLeft,
+  Boxes, PackagePlus,
   LineChart, PieChart,
   SlidersHorizontal, Cog,
   ArrowRight, Sparkles
@@ -75,7 +75,6 @@ const modules = [
     borderGlow: "group-hover:border-indigo-500/30",
     links: [
       { label: "Cadastrar Produto", href: "/estoque/novo", icon: <PackagePlus className="h-4 w-4" /> },
-      { label: "Entrada de Saldo", href: "/estoque/entrada", icon: <ArrowRightLeft className="h-4 w-4" /> },
       { label: "Inventário", href: "/estoque", icon: <Boxes className="h-4 w-4" /> },
     ]
   },
