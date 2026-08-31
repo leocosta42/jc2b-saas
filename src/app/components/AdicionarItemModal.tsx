@@ -140,65 +140,67 @@ export function AdicionarItemModal({ isOpen, tipo, listaProdutosInit, onClose, o
           </div>
         </div>
 
-        {/* GRID PRODUTOS (Lista) */}
+        {/* GRID PRODUTOS (Lista) — grid em vez de <table>: sticky em thead de
+            tabela HTML tem um bug de renderizacao conhecido (linhas
+            "vazando" por baixo do cabecalho fixo em certas condicoes de
+            scroll), grid evita isso por completo. */}
         <div className="flex-1 overflow-auto bg-muted/10 min-h-[200px] border-b border-border/50">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50 sticky top-0 shadow-sm z-10">
-              <tr>
-                <th className="px-4 py-2 font-medium w-48">Código</th>
-                <th className="px-4 py-2 font-medium">Descrição</th>
-                <th className="px-4 py-2 font-medium text-center w-20">U.M</th>
-                <th className="px-4 py-2 font-medium text-right w-32">R$ Unit.</th>
-                <th className="px-4 py-2 font-medium text-center w-24">Estoque</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/30">
+          <div role="table" className="w-full text-sm text-left grid grid-cols-[12rem_1fr_5rem_8rem_6rem]">
+            <div role="rowgroup" className="contents">
+              <div role="row" className="contents">
+                <div role="columnheader" className="sticky top-0 z-10 bg-background shadow-sm border-b border-border/50 px-4 py-2 font-medium">Código</div>
+                <div role="columnheader" className="sticky top-0 z-10 bg-background shadow-sm border-b border-border/50 px-4 py-2 font-medium">Descrição</div>
+                <div role="columnheader" className="sticky top-0 z-10 bg-background shadow-sm border-b border-border/50 px-4 py-2 font-medium text-center">U.M</div>
+                <div role="columnheader" className="sticky top-0 z-10 bg-background shadow-sm border-b border-border/50 px-4 py-2 font-medium text-right">R$ Unit.</div>
+                <div role="columnheader" className="sticky top-0 z-10 bg-background shadow-sm border-b border-border/50 px-4 py-2 font-medium text-center">Estoque</div>
+              </div>
+            </div>
+            <div role="rowgroup" className="contents">
               {filtrados.map(p => (
-                <tr 
-                  key={p.id} 
-                  className={`cursor-pointer transition-colors ${
-                    produtoSelecionado?.id === p.id 
-                      ? 'bg-indigo-500/10 border-l-4 border-l-indigo-500' 
-                      : 'hover:bg-muted/40'
+                <div
+                  role="row"
+                  key={p.id}
+                  className={`contents cursor-pointer transition-colors group ${
+                    produtoSelecionado?.id === p.id ? 'bg-indigo-500/10' : ''
                   }`}
                   onClick={() => handleSelectProduto(p)}
                 >
-                  <td className={`px-4 py-2 ${produtoSelecionado?.id === p.id ? 'font-semibold text-indigo-700' : 'font-medium text-muted-foreground'}`}>
+                  <div role="cell" className={`px-4 py-2 border-b border-border/30 group-hover:bg-muted/40 ${produtoSelecionado?.id === p.id ? 'font-semibold text-indigo-700 border-l-4 border-l-indigo-500 -ml-1 pl-3.5' : 'font-medium text-muted-foreground'}`}>
                     {p.sku || '-'}
-                  </td>
-                  <td className={`px-4 py-2 ${produtoSelecionado?.id === p.id ? 'font-medium text-indigo-700' : ''}`}>
+                  </div>
+                  <div role="cell" className={`px-4 py-2 border-b border-border/30 group-hover:bg-muted/40 ${produtoSelecionado?.id === p.id ? 'font-medium text-indigo-700' : ''}`}>
                     {p.nome}
-                  </td>
-                  <td className="px-4 py-2 text-center text-muted-foreground">
+                  </div>
+                  <div role="cell" className="px-4 py-2 border-b border-border/30 group-hover:bg-muted/40 text-center text-muted-foreground">
                     {p.um || 'UN'}
-                  </td>
-                  <td className="px-4 py-2 text-right">
+                  </div>
+                  <div role="cell" className="px-4 py-2 border-b border-border/30 group-hover:bg-muted/40 text-right">
                     {(p.preco_venda || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </td>
-                  <td className="px-4 py-2 text-center">
+                  </div>
+                  <div role="cell" className="px-4 py-2 border-b border-border/30 group-hover:bg-muted/40 text-center">
                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                      (p.quantidade_estoque || 0) <= 0 
-                        ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
+                      (p.quantidade_estoque || 0) <= 0
+                        ? 'bg-red-500/10 text-red-500 border border-red-500/20'
                         : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                     }`}>
                       {p.quantidade_estoque || 0}
                     </span>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
               {filtrados.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <div role="row" className="contents">
+                  <div role="cell" className="col-span-5 px-4 py-8 text-center text-muted-foreground">
                     {buscando
                       ? "Buscando..."
                       : busca.length > 2
                         ? "Nenhum produto encontrado."
                         : "Digite para buscar produtos..."}
-                  </td>
-                </tr>
+                  </div>
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
 
         {/* RODAPÉ: FORMULÁRIO DE INCLUSÃO */}
