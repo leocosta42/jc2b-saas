@@ -111,8 +111,14 @@ export async function getAjustesEstoque({ page = 1, produtoId }: { page?: number
 
   if (error) return { data: [], totalPages: 1, totalCount: 0 }
 
+  const normalized = (data || []).map((row: any) => ({
+    ...row,
+    produtos: Array.isArray(row.produtos) ? (row.produtos[0] ?? null) : row.produtos,
+    profiles: Array.isArray(row.profiles) ? (row.profiles[0] ?? null) : row.profiles,
+  }))
+
   return {
-    data: data || [],
+    data: normalized,
     totalPages: count ? Math.ceil(count / limit) : 1,
     totalCount: count || 0,
   }
