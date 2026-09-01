@@ -1,6 +1,7 @@
 "use client"
 
-import { Printer, MessageCircle, X } from "lucide-react"
+import { useState } from "react"
+import { Printer, FileDown, MessageCircle, X, Loader2 } from "lucide-react"
 
 interface PrintActionsProps {
   id: string
@@ -10,8 +11,31 @@ interface PrintActionsProps {
 }
 
 export function PrintActions({ id, numero, tipo, celular }: PrintActionsProps) {
+  const [gerandoPdf, setGerandoPdf] = useState(false)
+
   const handlePrint = () => {
     window.print()
+  }
+
+  const handleGerarPdf = async () => {
+    setGerandoPdf(true)
+    try {
+      const res = await fetch(`/imprimir/${id}/pdf`)
+      if (!res.ok) throw new Error('Falha ao gerar o PDF.')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${tipo === 'Orçamento' ? 'orcamento' : 'pedido'}-${numero}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Não foi possível gerar o PDF. Tente novamente.')
+    } finally {
+      setGerandoPdf(false)
+    }
   }
 
   const handleClose = () => {
@@ -40,12 +64,20 @@ export function PrintActions({ id, numero, tipo, celular }: PrintActionsProps) {
         <MessageCircle className="h-4 w-4" />
         Enviar WhatsApp
       </button>
-      <button 
+      <button
         onClick={handlePrint}
         className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors font-medium"
       >
         <Printer className="h-4 w-4" />
-        Imprimir / PDF
+        Imprimir
+      </button>
+      <button
+        onClick={handleGerarPdf}
+        disabled={gerandoPdf}
+        className="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded shadow hover:bg-rose-700 transition-colors font-medium disabled:opacity-50"
+      >
+        {gerandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+        {gerandoPdf ? "Gerando..." : "Gerar PDF"}
       </button>
       <button 
         onClick={handleClose}
