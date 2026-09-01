@@ -7,11 +7,22 @@ interface PrintActionsProps {
   id: string
   numero: string
   tipo: string
+  tipoArquivo?: string
+  clienteNome?: string
   celular?: string
 }
 
-export function PrintActions({ id, numero, tipo, celular }: PrintActionsProps) {
+// Remove caracteres invalidos em nome de arquivo no Windows/macOS
+function nomeArquivoSeguro(texto: string) {
+  return texto.replace(/[\\/:*?"<>|]/g, '').trim()
+}
+
+export function PrintActions({ id, numero, tipo, tipoArquivo, clienteNome, celular }: PrintActionsProps) {
   const [gerandoPdf, setGerandoPdf] = useState(false)
+
+  const nomeArquivo = nomeArquivoSeguro(
+    `${tipoArquivo || tipo} - ${numero}${clienteNome ? ` - ${clienteNome}` : ''}`
+  ) + '.pdf'
 
   const handlePrint = () => {
     window.print()
@@ -26,7 +37,7 @@ export function PrintActions({ id, numero, tipo, celular }: PrintActionsProps) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${tipo === 'Orçamento' ? 'orcamento' : 'pedido'}-${numero}.pdf`
+      a.download = nomeArquivo
       document.body.appendChild(a)
       a.click()
       a.remove()

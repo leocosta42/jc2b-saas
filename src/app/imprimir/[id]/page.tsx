@@ -20,6 +20,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
   const itens = doc.itens_pedido || []
 
   const tipo = doc.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido de Venda'
+  const tipoArquivo = doc.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'
   const numero = doc.numero_pedido || '0000'
 
   const dataEmissao = doc.data_emissao ? new Date(doc.data_emissao).toLocaleDateString('pt-BR') : ''
@@ -90,11 +91,13 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         }
       `}} />
       
-      <PrintActions 
-        id={id} 
-        numero={numero.toString()} 
-        tipo={tipo} 
-        celular={cliente.celular} 
+      <PrintActions
+        id={id}
+        numero={numero.toString()}
+        tipo={tipo}
+        tipoArquivo={tipoArquivo}
+        clienteNome={cliente.nome}
+        celular={cliente.celular}
       />
 
       <div className="max-w-[800px] mx-auto bg-white border border-gray-300 print:border-none p-8 relative shadow-lg print:shadow-none">

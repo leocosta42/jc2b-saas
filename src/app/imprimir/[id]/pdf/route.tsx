@@ -16,13 +16,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const buffer = await renderToBuffer(<DocumentoPdf doc={doc} config={config} />)
 
-  const tipo = doc.tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido'
+  const tipoLabel = doc.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'
   const numero = doc.numero_pedido || '0000'
+  const cliente = Array.isArray(doc.clientes) ? doc.clientes[0] : (doc.clientes || {})
+  const nomeArquivo = `${tipoLabel} - ${numero}${cliente?.nome ? ` - ${cliente.nome}` : ''}.pdf`
+    .replace(/[\\/:*?"<>|]/g, '')
+    .trim()
+  const nomeArquivoAscii = nomeArquivo.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '_')
 
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${tipo}-${numero}.pdf"`,
+      "Content-Disposition": `attachment; filename="${nomeArquivoAscii}"; filename*=UTF-8''${encodeURIComponent(nomeArquivo)}`,
     },
   })
 }
