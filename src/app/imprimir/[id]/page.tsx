@@ -1,13 +1,12 @@
-import { getDocumentoCompleto } from "@/app/actions/imprimir"
-import { getTenantConfig } from "@/app/actions/configuracoes"
+import { getDocumentoCompleto, getTenantConfigPublico } from "@/app/actions/imprimir"
 import { notFound } from "next/navigation"
 import { PrintActions } from "./print-actions"
 
 export default async function ImprimirPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const res = await getDocumentoCompleto(id)
-  const config = await getTenantConfig()
-  
+  const config = res.data ? await getTenantConfigPublico((res.data as any).tenant_id) : null
+
   if (res.error) {
     return <div className="p-8 text-red-500 font-bold">Erro ao buscar pedido: {res.error}</div>
   }

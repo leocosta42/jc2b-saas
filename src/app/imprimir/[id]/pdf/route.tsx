@@ -1,5 +1,4 @@
-import { getDocumentoCompleto } from "@/app/actions/imprimir"
-import { getTenantConfig } from "@/app/actions/configuracoes"
+import { getDocumentoCompleto, getTenantConfigPublico } from "@/app/actions/imprimir"
 import { renderToBuffer } from "@react-pdf/renderer"
 import { DocumentoPdf } from "../DocumentoPdf"
 import { NextRequest } from "next/server"
@@ -12,8 +11,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return new Response(res.error || "Documento não encontrado.", { status: 404 })
   }
 
-  const config = await getTenantConfig()
   const doc = res.data as any
+  const config = await getTenantConfigPublico(doc.tenant_id)
 
   const buffer = await renderToBuffer(<DocumentoPdf doc={doc} config={config} />)
 

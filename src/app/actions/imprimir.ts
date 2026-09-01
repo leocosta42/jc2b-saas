@@ -14,6 +14,7 @@ export async function getDocumentoCompleto(id: string) {
     .from('pedidos')
     .select(`
       id,
+      tenant_id,
       numero_pedido,
       tipo,
       data_emissao,
@@ -45,4 +46,24 @@ export async function getDocumentoCompleto(id: string) {
 
   if (error) return { error: error.message }
   return { data }
+}
+
+// Dados da empresa (logo, endereço, telefone, email, cnpj) para a mesma
+// visualizacao publica acima. getTenantConfig() em actions/configuracoes.ts
+// exige sessao logada, entao nao funciona para quem abre o link do WhatsApp
+// sem estar logado - aqui o tenant_id vem do proprio documento (ja validado
+// pelo UUID impossivel de adivinhar), nao de entrada do cliente.
+export async function getTenantConfigPublico(tenantId: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+  const supabase = createSupabaseClient(supabaseUrl, supabaseKey)
+
+  const { data } = await supabase
+    .from('tenants')
+    .select('id, name, cnpj, telefone, email, endereco, cep, logo_url')
+    .eq('id', tenantId)
+    .single()
+
+  return data
 }
