@@ -114,6 +114,7 @@ export async function createDocumento(data: {
   valor_frete?: number
   tipo_frete?: string
   desconto_total?: number
+  peso_total?: number
   itens: Array<{
     produto_id: string
     quantidade: number
@@ -178,6 +179,7 @@ export async function createDocumento(data: {
         valor_frete: data.valor_frete || 0,
         tipo_frete: data.tipo_frete || 'CIF',
         desconto_total: data.desconto_total || 0,
+        peso_total: data.peso_total ?? null,
         status: data.tipo === 'ORCAMENTO' ? 'Aberto' : 'Pendente'
       })
       .select('id')
@@ -365,10 +367,10 @@ export async function getPedidoCompletoById(id: string) {
   const { data: pedido } = await supabase
     .from('pedidos')
     .select(`
-      id, tipo, cliente_id, vendedor_id, data_emissao, data_entrega, forma_pagamento, observacoes, status, valor_frete, desconto_total,
+      id, tipo, cliente_id, vendedor_id, data_emissao, data_entrega, forma_pagamento, observacoes, status, valor_frete, tipo_frete, desconto_total, peso_total,
       itens_pedido (
         id, produto_id, quantidade, preco_unitario, desconto_percentual, unidade_medida,
-        produtos ( sku, nome )
+        produtos ( sku, nome, peso )
       )
     `)
     .eq('id', id)
@@ -427,7 +429,8 @@ export async function updateDocumento(id: string, data: any) {
         observacoes: data.observacoes,
         valor_frete: data.valor_frete || 0,
         tipo_frete: data.tipo_frete || 'CIF',
-        desconto_total: data.desconto_total || 0
+        desconto_total: data.desconto_total || 0,
+        peso_total: data.peso_total ?? null
       })
       .eq('id', id)
       .eq('tenant_id', tenantId)

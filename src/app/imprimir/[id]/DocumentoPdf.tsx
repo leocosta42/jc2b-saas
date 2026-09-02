@@ -74,11 +74,15 @@ export function DocumentoPdf({ doc, config }: { doc: any; config: any }) {
     const desc = Number(item.desconto_percentual) || 0
     return acc + (qtde * preco) * (1 - desc / 100)
   }, 0)
-  const pesoTotal = itens.reduce((acc: number, item: any) => {
-    const qtde = Number(item.quantidade) || 0
-    const pesoUnit = Number(item.produtos?.peso) || 0
-    return acc + pesoUnit * qtde
-  }, 0)
+  // Documentos antigos (antes da migration 012) nao tem peso_total salvo -
+  // nesse caso caimos no calculo pelos itens como antes.
+  const pesoTotal = doc.peso_total != null
+    ? Number(doc.peso_total)
+    : itens.reduce((acc: number, item: any) => {
+      const qtde = Number(item.quantidade) || 0
+      const pesoUnit = Number(item.produtos?.peso) || 0
+      return acc + pesoUnit * qtde
+    }, 0)
   const freteValor = doc.tipo_frete === 'FOB' ? Number(doc.valor_frete) || 0 : 0
 
   const logoSrc = config?.logo_url || (logoPadraoBuffer ? { data: logoPadraoBuffer, format: 'png' as const } : undefined)

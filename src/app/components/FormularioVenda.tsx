@@ -58,8 +58,18 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   const [dimA, setDimA] = useState<number>(20) // Altura
 
   // Peso total: calculado automaticamente a partir dos itens, mas pode ser
-  // sobrescrito manualmente (ex: quando algum produto nao tem peso cadastrado)
-  const [pesoTotalManual, setPesoTotalManual] = useState<number | null>(null)
+  // sobrescrito manualmente (ex: quando algum produto nao tem peso cadastrado).
+  // Ao editar um documento cujo peso salvo diverge do que os itens dariam
+  // hoje, comeca em modo manual com esse valor (senao a edicao perderia o
+  // override feito antes). Se bater com o calculo, comeca em modo automatico.
+  const [pesoTotalManual, setPesoTotalManual] = useState<number | null>(() => {
+    if (pedidoEdit?.peso_total == null) return null
+    const pesoSalvo = Number(pedidoEdit.peso_total)
+    const pesoCalculadoOriginal = (pedidoEdit.itens_pedido || []).reduce((acc: number, ip: any) => {
+      return acc + ((Number(ip.produtos?.peso) || 0) * (Number(ip.quantidade) || 0))
+    }, 0)
+    return Math.abs(pesoSalvo - pesoCalculadoOriginal) > 0.0005 ? pesoSalvo : null
+  })
 
   // Itens
   const [itens, setItens] = useState(() => {
@@ -178,6 +188,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
         valor_frete: Number(valorFrete),
         tipo_frete: tipoFrete,
         desconto_total: descontoTotal,
+        peso_total: totalPeso,
         itens: itens.map((i: any) => ({
           produto_id: i.produto_id,
           quantidade: Number(i.quantidade),
