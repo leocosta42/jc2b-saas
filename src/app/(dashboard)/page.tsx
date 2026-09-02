@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { 
+import {
   Users, UserPlus, Contact,
   Briefcase, Truck, Factory,
   FileSpreadsheet, Calculator,
@@ -8,6 +8,7 @@ import {
   Boxes, PackagePlus,
   LineChart, PieChart,
   SlidersHorizontal, Cog,
+  Shield, ClipboardList,
   ArrowRight, Sparkles
 } from 'lucide-react'
 
@@ -75,7 +76,8 @@ const modules = [
     borderGlow: "group-hover:border-indigo-500/30",
     links: [
       { label: "Cadastrar Produto", href: "/estoque/novo", icon: <PackagePlus className="h-4 w-4" /> },
-      { label: "Inventário", href: "/estoque/ajustes", icon: <Boxes className="h-4 w-4" /> },
+      { label: "Estoque", href: "/estoque", icon: <Boxes className="h-4 w-4" /> },
+      { label: "Inventário", href: "/estoque/ajustes", icon: <ClipboardList className="h-4 w-4" /> },
     ]
   },
   {
@@ -95,6 +97,7 @@ const modules = [
     bgLight: "bg-slate-500/10",
     borderGlow: "group-hover:border-slate-500/30",
     links: [
+      { label: "Equipe", href: "/equipe", icon: <Shield className="h-4 w-4" /> },
       { label: "Ajustes Gerais", href: "/configuracoes", icon: <Cog className="h-4 w-4" /> },
     ]
   }
@@ -107,18 +110,6 @@ export default async function DashboardPage() {
       {/* Decoração de Fundo */}
       <div className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl opacity-50 pointer-events-none" />
       <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 rounded-full bg-blue-500/5 blur-3xl opacity-50 pointer-events-none" />
-
-      {/* Hero Section */}
-      <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4">
-        <div className="space-y-1 relative z-10">
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground">
-            JC2B <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">PARTS</span>
-          </h1>
-          <p className="text-muted-foreground text-sm max-w-xl leading-relaxed">
-            Gestão integrada de ponta a ponta. Acompanhe suas vendas, controle seu estoque e expanda seus resultados.
-          </p>
-        </div>
-      </div>
 
       {/* Grid de Módulos (Design Premium SaaS) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative z-10 flex-1 content-start">
