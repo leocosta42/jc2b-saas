@@ -57,6 +57,10 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   const [dimL, setDimL] = useState<number>(20) // Largura
   const [dimA, setDimA] = useState<number>(20) // Altura
 
+  // Peso total: calculado automaticamente a partir dos itens, mas pode ser
+  // sobrescrito manualmente (ex: quando algum produto nao tem peso cadastrado)
+  const [pesoTotalManual, setPesoTotalManual] = useState<number | null>(null)
+
   // Itens
   const [itens, setItens] = useState(() => {
     if (pedidoEdit?.itens_pedido && pedidoEdit.itens_pedido.length > 0) {
@@ -133,10 +137,11 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
     return acc + (precoBruto - precoLiquido)
   }, 0)
 
-  const totalPeso = itens.reduce((acc: number, item: any) => {
+  const pesoTotalCalculado = itens.reduce((acc: number, item: any) => {
     const p = listaProdutos.find(prod => prod.id === item.produto_id)
     return acc + ((Number(p?.peso) || 0) * (Number(item.quantidade) || 0))
   }, 0)
+  const totalPeso = pesoTotalManual ?? pesoTotalCalculado
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -519,14 +524,29 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                   <span className="text-muted-foreground">Qtd. Total</span>
                   <span className="font-medium">{totalQtde}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Peso Total (kg)</span>
-                  <span className="font-medium">
-                    {itens.reduce((acc: number, item: any) => {
-                      const p = listaProdutos.find(prod => prod.id === item.produto_id);
-                      return acc + ((Number(p?.peso) || 0) * (Number(item.quantidade) || 0));
-                    }, 0).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                  </span>
+                <div className="flex justify-between items-center text-sm gap-2">
+                  <span className="text-muted-foreground shrink-0">Peso Total (kg)</span>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value={totalPeso}
+                      onChange={(e) => setPesoTotalManual(Math.max(0, Number(e.target.value) || 0))}
+                      className="w-28 h-8 rounded-md border border-input bg-background/50 px-2 text-right text-sm font-medium"
+                      title="Calculado automaticamente pelos itens - pode ser alterado manualmente"
+                    />
+                    {pesoTotalManual !== null && (
+                      <button
+                        type="button"
+                        onClick={() => setPesoTotalManual(null)}
+                        className="text-xs text-muted-foreground hover:text-primary underline shrink-0"
+                        title="Voltar a calcular automaticamente pelos itens"
+                      >
+                        auto
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {/* Dimensões */}
                 <div className="py-2 border-t border-border/50 space-y-2">
