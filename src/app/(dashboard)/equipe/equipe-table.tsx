@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { updateRole } from '@/app/actions/equipe'
+import { updateRole, deactivateUser, deleteUser } from '@/app/actions/equipe'
 import { useRouter } from 'next/navigation'
-import { User, ShieldAlert, Check, Loader2 } from 'lucide-react'
+import { User, ShieldAlert, Check, Loader2, Lock, Trash2 } from 'lucide-react'
 
 export function EquipeTable({ data }: { data: any[] }) {
   const router = useRouter()
@@ -23,6 +23,36 @@ export function EquipeTable({ data }: { data: any[] }) {
     })
   }
 
+  const handleDeactivate = (userId: string, userName: string) => {
+    if (!confirm(`Tem certeza que deseja desativar ${userName}?`)) return
+
+    setLoadingId(userId)
+    startTransition(async () => {
+      const res = await deactivateUser(userId)
+      setLoadingId(null)
+      if (res.error) {
+        alert(res.error)
+      } else {
+        router.refresh()
+      }
+    })
+  }
+
+  const handleDelete = (userId: string, userName: string) => {
+    if (!confirm(`Tem certeza que deseja DELETAR ${userName}? Esta ação não pode ser desfeita.`)) return
+
+    setLoadingId(userId)
+    startTransition(async () => {
+      const res = await deleteUser(userId)
+      setLoadingId(null)
+      if (res.error) {
+        alert(res.error)
+      } else {
+        router.refresh()
+      }
+    })
+  }
+
   return (
     <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
@@ -32,6 +62,7 @@ export function EquipeTable({ data }: { data: any[] }) {
               <th className="px-6 py-4 font-semibold">Usuário</th>
               <th className="px-6 py-4 font-semibold">Cargo / Nível de Acesso</th>
               <th className="px-6 py-4 font-semibold">Status</th>
+              <th className="px-6 py-4 font-semibold text-center">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/50">
@@ -66,10 +97,47 @@ export function EquipeTable({ data }: { data: any[] }) {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                    Ativo
-                  </span>
+                  {user.ativo !== false ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                      Ativo
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-gray-500"></span>
+                      Desativado
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-center gap-2">
+                    {user.ativo !== false && (
+                      <button
+                        onClick={() => handleDeactivate(user.id, user.full_name || 'Usuário')}
+                        disabled={isPending && loadingId === user.id}
+                        title="Desativar usuário"
+                        className="p-2 rounded-md hover:bg-yellow-500/10 hover:text-yellow-600 text-muted-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isPending && loadingId === user.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Lock className="h-4 w-4" />
+                        )}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDelete(user.id, user.full_name || 'Usuário')}
+                      disabled={isPending && loadingId === user.id}
+                      title="Deletar usuário"
+                      className="p-2 rounded-md hover:bg-red-500/10 hover:text-red-600 text-muted-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isPending && loadingId === user.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

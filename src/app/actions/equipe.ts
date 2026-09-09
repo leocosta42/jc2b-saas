@@ -61,3 +61,74 @@ export async function updateRole(userIdToUpdate: string, newRole: string) {
     return { error: error.message }
   }
 }
+
+export async function deactivateUser(userIdToDeactivate: string) {
+  try {
+    const supabase = await createClient()
+    const { data: authData } = await supabase.auth.getUser()
+    if (!authData?.user) return { error: "Não autenticado." }
+
+    const profile = await getTenantAndRole(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Tenant não encontrado." }
+
+    const role = profile.role?.toLowerCase() || ''
+    const isAdmin = ['admin', 'gerente', 'dono'].includes(role)
+    if (!isAdmin) return { error: "Sem permissão para desativar usuários." }
+
+    // Não permite desativar a si mesmo
+    if (userIdToDeactivate === authData.user.id) {
+      return { error: "Você não pode desativar sua própria conta." }
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ ativo: false })
+      .eq('id', userIdToDeactivate)
+      .eq('tenant_id', profile.tenant_id)
+
+    if (error) throw error
+
+    revalidatePath("/equipe")
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
+
+export async function deleteUser(userIdToDelete: string) {
+  try {
+    const supabase = await createClient()
+    const { data: authData } = await supabase.auth.getUser()
+    if (!authData?.user) return { error: "Não autenticado." }
+
+    const profile = await getTenantAndRole(supabase, authData.user.id)
+    if (!profile.tenant_id) return { error: "Tenant não encontrado." }
+
+    const role = profile.role?.toLowerCase() || ''
+    const isDono = role === 'dono'
+    if (!isDono) return { error: "Apenas o dono pode deletar usuários." }
+
+    // Não permite deletar a si mesmo
+    if (userIdToDelete === authData.user.id) {
+      return { error: "Você não pode deletar sua própria conta." }
+    }
+
+    // Deletar do Supabase Auth
+    const { error: authError } = await supabase.auth.admin.deleteUser(userIdToDelete)
+    if (authError) throw authError
+
+    // Deletar do banco de dados (profiles)
+    const { error: dbError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userIdToDelete)
+      .eq('tenant_id', profile.tenant_id)
+
+    if (dbError) throw dbError
+
+    revalidatePath("/equipe")
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message }
+  }
+}
