@@ -10,7 +10,7 @@ import {
   SlidersHorizontal, Cog,
   Shield, ClipboardList,
   ArrowRight, Sparkles,
-  BarChart3, Lock
+  BarChart3
 } from 'lucide-react'
 
 const modules = [
@@ -92,22 +92,13 @@ const modules = [
     ]
   },
   {
-    title: "Segurança",
-    description: "Auditoria e monitoramento",
-    icon: <Lock className="h-6 w-6 text-red-500" />,
-    bgLight: "bg-red-500/10",
-    borderGlow: "group-hover:border-red-500/30",
-    links: [
-      { label: "Auditoria & Monitoramento", href: "/auditoria", icon: <BarChart3 className="h-4 w-4" /> },
-    ]
-  },
-  {
     title: "Configurações",
     description: "Ajustes e preferências",
     icon: <SlidersHorizontal className="h-6 w-6 text-slate-500" />,
     bgLight: "bg-slate-500/10",
     borderGlow: "group-hover:border-slate-500/30",
     links: [
+      { label: "Auditoria & Monitoramento", href: "/auditoria", icon: <BarChart3 className="h-4 w-4" /> },
       { label: "Equipe", href: "/equipe", icon: <Shield className="h-4 w-4" /> },
       { label: "Ajustes Gerais", href: "/configuracoes", icon: <Cog className="h-4 w-4" /> },
     ]
