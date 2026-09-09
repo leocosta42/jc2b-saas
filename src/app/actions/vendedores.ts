@@ -3,60 +3,62 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { vendedorSchema } from "./schema"
+import { logAudit } from "@/app/lib/audit"
 
 export async function createVendedor(formData: FormData) {
-  try {
-    const supabase = await createClient()
+  const supabase = await createClient()
 
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) {
-      return { error: "Usuário não autenticado. Faça login para continuar." }
-    }
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) {
+    return { error: "Usuário não autenticado. Faça login para continuar." }
+  }
 
-    let { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', authData.user.id)
+  let { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', authData.user.id)
+    .single()
+
+  // Sistema de Auto-Cura (Auto-Healing) caso o Trigger do Banco falhe ou não tenha sido rodado
+  if (!profile?.tenant_id) {
+    console.log("Perfil não encontrado. Tentando auto-cura...")
+
+    // 1. Acha ou cria a empresa principal
+    let { data: tenant } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('slug', 'jc2b-matriz')
       .single()
 
-    // Sistema de Auto-Cura (Auto-Healing) caso o Trigger do Banco falhe ou não tenha sido rodado
-    if (!profile?.tenant_id) {
-      console.log("Perfil não encontrado. Tentando auto-cura...")
-      
-      // 1. Acha ou cria a empresa principal
-      let { data: tenant } = await supabase
+    if (!tenant) {
+      const { data: newTenant } = await supabase
         .from('tenants')
+        .insert({ name: 'JC2B Matriz', slug: 'jc2b-matriz' })
         .select('id')
-        .eq('slug', 'jc2b-matriz')
         .single()
-        
-      if (!tenant) {
-        const { data: newTenant } = await supabase
-          .from('tenants')
-          .insert({ name: 'JC2B Matriz', slug: 'jc2b-matriz' })
-          .select('id')
-          .single()
-        tenant = newTenant
-      }
-
-      if (tenant) {
-        // 2. Cria o perfil do usuário na empresa
-        await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            tenant_id: tenant.id,
-            full_name: authData.user.email?.split('@')[0] || 'Usuario',
-            role: 'vendedor'
-          })
-          
-        profile = { tenant_id: tenant.id }
-      }
+      tenant = newTenant
     }
 
-    if (!profile?.tenant_id) {
-      return { error: "Falha crítica: Tenant não encontrado e não pôde ser criado automaticamente." }
+    if (tenant) {
+      // 2. Cria o perfil do usuário na empresa
+      await supabase
+        .from('profiles')
+        .upsert({
+          id: authData.user.id,
+          tenant_id: tenant.id,
+          full_name: authData.user.email?.split('@')[0] || 'Usuario',
+          role: 'vendedor'
+        })
+
+      profile = { tenant_id: tenant.id }
     }
+  }
+
+  if (!profile?.tenant_id) {
+    return { error: "Falha crítica: Tenant não encontrado e não pôde ser criado automaticamente." }
+  }
+
+  try {
 
     const rawData = {
       codigo: formData.get("codigo") as string,
@@ -88,27 +90,61 @@ export async function createVendedor(formData: FormData) {
       }
     }
 
+    const insertPayload = {
+      tenant_id: profile.tenant_id,
+      codigo,
+      nome,
+      telefone,
+      email,
+      cpf_cnpj: documento,
+      comissao_percentual: comissao
+    }
+
     const { error } = await supabase
       .from('vendedores')
-      .insert({
-        tenant_id: profile.tenant_id,
-        codigo,
-        nome,
-        telefone,
-        email,
-        cpf_cnpj: documento,
-        comissao_percentual: comissao
-      })
+      .insert(insertPayload)
 
     if (error) {
       console.error("Erro ao inserir vendedor:", error)
+      await logAudit({
+        tenantId: profile.tenant_id,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'CREATE',
+        resourceType: 'vendedor',
+        resourceName: nome,
+        result: 'error',
+        errorMessage: error.message,
+      })
       return { error: "Erro no banco de dados: " + error.message }
     }
+
+    await logAudit({
+      tenantId: profile.tenant_id,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'vendedor',
+      resourceName: nome,
+      changes: {
+        after: insertPayload,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/vendedores")
     return { success: true }
   } catch (err: any) {
     console.error("Erro interno no servidor:", err)
+    await logAudit({
+      tenantId: profile.tenant_id,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'vendedor',
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Ocorreu um erro inesperado no servidor: " + (err.message || String(err)) }
   }
 }
@@ -143,13 +179,21 @@ export async function getNextVendedorCode() {
 }
 
 export async function updateVendedor(id: string, formData: FormData) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
-    if (!profile?.tenant_id) return { error: "Tenant não encontrado." }
+  const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
+  if (!profile?.tenant_id) return { error: "Tenant não encontrado." }
+
+  try {
+    // Buscar vendedor ANTES de atualizar (para auditoria)
+    const { data: vendedorAntigo } = await supabase
+      .from('vendedores')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', profile.tenant_id)
+      .single()
 
     const rawData = {
       codigo: formData.get("codigo") as string,
@@ -178,29 +222,77 @@ export async function updateVendedor(id: string, formData: FormData) {
       if (existingDoc) return { error: "Este CPF/CNPJ já está cadastrado para outro vendedor." }
     }
 
+    const updatePayload = { codigo, nome, telefone, email, cpf_cnpj: documento, comissao_percentual: comissao }
+
     const { error } = await supabase
       .from('vendedores')
-      .update({ codigo, nome, telefone, email, cpf_cnpj: documento, comissao_percentual: comissao })
+      .update(updatePayload)
       .eq('id', id)
       .eq('tenant_id', profile.tenant_id)
 
-    if (error) return { error: "Erro ao atualizar: " + error.message }
+    if (error) {
+      await logAudit({
+        tenantId: profile.tenant_id,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'UPDATE',
+        resourceType: 'vendedor',
+        resourceId: id,
+        resourceName: nome,
+        result: 'error',
+        errorMessage: error.message,
+      })
+      return { error: "Erro ao atualizar: " + error.message }
+    }
+
+    await logAudit({
+      tenantId: profile.tenant_id,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: 'vendedor',
+      resourceId: id,
+      resourceName: nome,
+      changes: {
+        before: vendedorAntigo,
+        after: updatePayload,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/vendedores")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId: profile.tenant_id,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: 'vendedor',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
 
 export async function deleteVendedor(id: string) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
-    if (!profile?.tenant_id) return { error: "Tenant não encontrado." }
+  const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', authData.user.id).single()
+  if (!profile?.tenant_id) return { error: "Tenant não encontrado." }
+
+  try {
+    // Buscar vendedor ANTES de deletar (para auditoria)
+    const { data: vendedorAntigo } = await supabase
+      .from('vendedores')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', profile.tenant_id)
+      .single()
 
     const { error } = await supabase
       .from('vendedores')
@@ -208,11 +300,48 @@ export async function deleteVendedor(id: string) {
       .eq('id', id)
       .eq('tenant_id', profile.tenant_id)
 
-    if (error) return { error: "Erro ao excluir: " + error.message }
+    if (error) {
+      await logAudit({
+        tenantId: profile.tenant_id,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'DELETE',
+        resourceType: 'vendedor',
+        resourceId: id,
+        result: 'error',
+        errorMessage: error.message,
+      })
+      return { error: "Erro ao excluir: " + error.message }
+    }
+
+    await logAudit({
+      tenantId: profile.tenant_id,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: 'vendedor',
+      resourceId: id,
+      resourceName: vendedorAntigo?.nome,
+      changes: {
+        before: vendedorAntigo,
+        after: { ativo: false },
+      },
+      result: 'success',
+    })
 
     revalidatePath("/vendedores")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId: profile.tenant_id,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: 'vendedor',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
