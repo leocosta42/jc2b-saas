@@ -35,7 +35,7 @@ export async function getFormData() {
   if (!tenantId) return { clientes: [], vendedores: [], produtos: [] }
 
   const [clientesData, vendedoresData, produtosData, tenantRes] = await Promise.all([
-    fetchTop(supabase, 'clientes', 'id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email', tenantId),
+    fetchTop(supabase, 'clientes', 'id, codigo, nome, cpf_cnpj, inscricao, rua, numero, bairro, cidade, estado, cep, celular, email', tenantId),
     fetchTop(supabase, 'vendedores', 'id, nome', tenantId, 1000), // vendedores usually don't exceed 1000
     fetchTop(supabase, 'produtos', 'id, nome, sku, preco_venda, quantidade_estoque, ncm, peso', tenantId, 100, 'sku'),
     supabase.from('tenants').select('cep').eq('id', tenantId).single()
@@ -58,12 +58,12 @@ export async function searchClientesAPI(query: string) {
 
   const { data } = await supabase
     .from('clientes')
-    .select('id, codigo, nome, cpf_cnpj, rua, numero, bairro, cidade, estado, cep, celular, email')
+    .select('id, codigo, nome, cpf_cnpj, inscricao, rua, numero, bairro, cidade, estado, cep, celular, email')
     .eq('tenant_id', tenantId)
     .eq('ativo', true)
     .or(`nome.ilike.%${query}%,cpf_cnpj.ilike.%${query}%,codigo.ilike.%${query}%`)
     .limit(50)
-  
+
   return data || []
 }
 
