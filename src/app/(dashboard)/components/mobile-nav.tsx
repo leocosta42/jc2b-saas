@@ -5,14 +5,14 @@ import Image from "next/image"
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, LayoutDashboard, FileSpreadsheet, Briefcase, Contact, Truck, Boxes, LineChart, SlidersHorizontal } from "lucide-react"
+import { Menu, X, Home, FileSpreadsheet, Briefcase, Contact, Truck, Boxes, LineChart, SlidersHorizontal } from "lucide-react"
 
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
 
   const links = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/", label: "Página Inicial", icon: Home },
     { href: "/orcamentos", label: "Vendas / Orçamentos", icon: FileSpreadsheet },
     { href: "/vendedores", label: "Vendedores", icon: Briefcase },
     { href: "/clientes", label: "Clientes", icon: Contact },

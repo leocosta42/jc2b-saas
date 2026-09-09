@@ -2,12 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard } from "lucide-react"
+import { Home } from "lucide-react"
 
-// Teste: por enquanto so o link de Dashboard fica na barra horizontal,
+// Teste: por enquanto so o link de Página Inicial fica na barra horizontal,
 // o resto da navegacao acontece pelos cards da propria pagina inicial.
 const LINKS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Página Inicial", icon: Home },
 ]
 
 export function TopNav({ isAdmin: _isAdmin }: { isAdmin: boolean }) {
