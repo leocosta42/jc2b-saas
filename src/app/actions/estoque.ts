@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { logAudit } from "@/app/lib/audit"
+import { ajusteEstoqueSchema } from "./schema"
 
 const MOTIVOS_VALIDOS = ['entrada_manual', 'devolucao', 'perda', 'contagem'] as const
 
@@ -28,40 +29,48 @@ export async function criarAjusteEstoque(formData: FormData) {
   if (!isAdmin) return { error: "Sem permissão para ajustar o estoque." }
 
   try {
-
     const produtoId = formData.get("produto_id") as string
     const motivo = formData.get("motivo") as string
-    const observacoes = (formData.get("observacoes") as string) || null
-    const quantidadeNova = Number(formData.get("quantidade_nova"))
+    const observacoes = (formData.get("observacoes") as string) || undefined
+    const quantidadeNova = formData.get("quantidade_nova") as string
 
-    if (!produtoId) return { error: "Selecione um produto." }
-    if (!MOTIVOS_VALIDOS.includes(motivo as any)) return { error: "Motivo inválido." }
-    if (!Number.isFinite(quantidadeNova) || quantidadeNova < 0) {
-      return { error: "Informe um novo saldo válido (maior ou igual a zero)." }
+    // Validar com Zod
+    const validationResult = ajusteEstoqueSchema.safeParse({
+      produto_id: produtoId,
+      motivo,
+      observacoes,
+      quantidade_nova: quantidadeNova
+    })
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.issues[0].message
+      return { error: errorMessage }
     }
+
+    const { produto_id: pidValidado, quantidade_nova: qtdNova } = validationResult.data
 
     const { data: produto, error: produtoError } = await supabase
       .from('produtos')
       .select('id, nome, quantidade_estoque')
-      .eq('id', produtoId)
+      .eq('id', pidValidado)
       .eq('tenant_id', tenantId)
       .single()
 
     if (produtoError || !produto) return { error: "Produto não encontrado." }
 
     const quantidadeAnterior = produto.quantidade_estoque || 0
-    if (quantidadeNova === quantidadeAnterior) {
+    if (qtdNova === quantidadeAnterior) {
       return { error: `O saldo de "${produto.nome}" já é ${quantidadeAnterior}. Informe um valor diferente para registrar o ajuste.` }
     }
 
     const adjustmentPayload = {
       tenant_id: tenantId,
-      produto_id: produtoId,
+      produto_id: pidValidado,
       usuario_id: authData.user.id,
       quantidade_anterior: quantidadeAnterior,
-      quantidade_nova: quantidadeNova,
-      motivo,
-      observacoes,
+      quantidade_nova: qtdNova,
+      motivo: validationResult.data.motivo,
+      observacoes: validationResult.data.observacoes,
     }
 
     const { error: insertError } = await supabase
@@ -75,7 +84,7 @@ export async function criarAjusteEstoque(formData: FormData) {
         userEmail: authData.user.email,
         action: 'CREATE',
         resourceType: 'estoque',
-        resourceId: produtoId,
+        resourceId: pidValidado,
         resourceName: produto.nome,
         result: 'error',
         errorMessage: insertError.message,
@@ -85,8 +94,8 @@ export async function criarAjusteEstoque(formData: FormData) {
 
     const { error: updateError } = await supabase
       .from('produtos')
-      .update({ quantidade_estoque: quantidadeNova })
-      .eq('id', produtoId)
+      .update({ quantidade_estoque: qtdNova })
+      .eq('id', pidValidado)
       .eq('tenant_id', tenantId)
 
     if (updateError) {
@@ -96,7 +105,7 @@ export async function criarAjusteEstoque(formData: FormData) {
         userEmail: authData.user.email,
         action: 'CREATE',
         resourceType: 'estoque',
-        resourceId: produtoId,
+        resourceId: pidValidado,
         resourceName: produto.nome,
         result: 'error',
         errorMessage: updateError.message,
@@ -110,14 +119,14 @@ export async function criarAjusteEstoque(formData: FormData) {
       userEmail: authData.user.email,
       action: 'CREATE',
       resourceType: 'estoque',
-      resourceId: produtoId,
+      resourceId: pidValidado,
       resourceName: produto.nome,
       changes: {
         after: {
           quantidade_anterior: quantidadeAnterior,
-          quantidade_nova: quantidadeNova,
-          motivo,
-          observacoes,
+          quantidade_nova: qtdNova,
+          motivo: validationResult.data.motivo,
+          observacoes: validationResult.data.observacoes,
         },
       },
       result: 'success',

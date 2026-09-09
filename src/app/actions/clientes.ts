@@ -43,11 +43,12 @@ export async function createCliente(formData: FormData) {
       bloqueado: formData.get("bloqueado") === 'true',
     };
 
-    const validatedData = clienteSchema.safeParse(rawData);
+    const validatedData = clienteSchema.safeParse(rawData)
     if (!validatedData.success) {
-      return { error: validatedData.error.issues[0].message };
+      const errorMessage = validatedData.error.issues[0].message
+      return { error: errorMessage }
     }
-    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado, bloqueado } = validatedData.data;
+    const { codigo, nome, documento, celular, email, inscricao, cep, rua, numero, complemento, bairro, cidade, estado, bloqueado } = validatedData.data
 
     // Validar CPF/CNPJ duplicado
     if (documento) {
@@ -168,11 +169,12 @@ export async function updateCliente(id: string, formData: FormData) {
       bloqueado: formData.get("bloqueado") === 'true',
     };
 
-    const validatedData = clienteSchema.safeParse(rawData);
+    const validatedData = clienteSchema.safeParse(rawData)
     if (!validatedData.success) {
-      return { error: validatedData.error.issues[0].message };
+      const errorMessage = validatedData.error.issues[0].message
+      return { error: errorMessage }
     }
-    const { codigo, nome, documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado, bloqueado } = validatedData.data;
+    const { codigo, nome, documento, celular, email, inscricao, cep, rua, numero, complemento, bairro, cidade, estado, bloqueado } = validatedData.data
 
     // Validar CPF/CNPJ duplicado em OUTRO cliente
     if (documento) {

@@ -74,7 +74,7 @@ export async function createVendedor(formData: FormData) {
       return { error: validatedData.error.issues[0].message };
     }
     const { codigo, nome, telefone, email, documento, comissao_percentual } = validatedData.data;
-    const comissao = parseFloat(comissao_percentual || "0");
+    const comissao = comissao_percentual;
     
     // Validar se CPF já existe
     if (documento) {
@@ -209,7 +209,7 @@ export async function updateVendedor(id: string, formData: FormData) {
       return { error: validatedData.error.issues[0].message };
     }
     const { codigo, nome, telefone, email, documento, comissao_percentual } = validatedData.data;
-    const comissao = parseFloat(comissao_percentual || "0");
+    const comissao = comissao_percentual;
 
     // Checar se CPF já existe em OUTRO vendedor
     if (documento) {

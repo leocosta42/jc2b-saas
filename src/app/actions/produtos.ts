@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { logAudit } from "@/app/lib/audit"
+import { produtoSchema } from "./schema"
 
 async function getTenantAndRole(supabase: any, userId: string) {
   const { data: profile } = await supabase
