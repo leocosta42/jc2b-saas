@@ -9,7 +9,8 @@ import {
   LineChart, PieChart,
   SlidersHorizontal, Cog,
   Shield, ClipboardList,
-  ArrowRight, Sparkles
+  ArrowRight, Sparkles,
+  BarChart3, Lock
 } from 'lucide-react'
 
 const modules = [
@@ -88,6 +89,16 @@ const modules = [
     borderGlow: "group-hover:border-amber-500/30",
     links: [
       { label: "Painel de Dados", href: "/estatisticas", icon: <PieChart className="h-4 w-4" /> },
+    ]
+  },
+  {
+    title: "Segurança",
+    description: "Auditoria e monitoramento",
+    icon: <Lock className="h-6 w-6 text-red-500" />,
+    bgLight: "bg-red-500/10",
+    borderGlow: "group-hover:border-red-500/30",
+    links: [
+      { label: "Auditoria & Monitoramento", href: "/auditoria", icon: <BarChart3 className="h-4 w-4" /> },
     ]
   },
   {
