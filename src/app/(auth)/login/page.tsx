@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
+import { loginAction } from '@/app/actions/auth'
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message?: string, mode?: string }> }) {
   const supabase = await createClient()
-  
+
   const { data: { session } } = await supabase.auth.getSession()
 
   if (session) {
@@ -15,30 +16,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const resolvedParams = await searchParams;
   const isRegister = resolvedParams?.mode === 'register'
   const message = resolvedParams?.message
-
-  const authenticate = async (formData: FormData) => {
-    'use server'
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const mode = formData.get('mode') as string
-    const name = formData.get('name') as string
-    
-    const supabase = await createClient()
-    
-    if (mode === 'register') {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: name } }
-      })
-      if (error) return redirect(`/login?mode=register&message=${encodeURIComponent('Não foi possível criar a conta. Verifique os dados e tente novamente.')}`)
-      return redirect('/login?message=Conta criada com sucesso! Você já pode fazer login.')
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) return redirect('/login?message=Credenciais inválidas.')
-      return redirect('/')
-    }
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
@@ -63,7 +40,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
         )}
 
-        <form className="mt-8 space-y-6" action={authenticate}>
+        <form className="mt-8 space-y-6" action={loginAction}>
           <input type="hidden" name="mode" value={isRegister ? 'register' : 'login'} />
           
           <div className="space-y-4 rounded-md shadow-sm">

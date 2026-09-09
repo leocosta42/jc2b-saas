@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { logAudit } from "@/app/lib/audit"
+import { checkRateLimit, recordAttempt } from "@/app/lib/rate-limit"
+import { RATE_LIMIT_CONFIGS } from "@/app/lib/rate-limit-config"
 
 async function getTenantId(supabase: any, userId: string): Promise<string | null> {
   const { data: profile } = await supabase
@@ -130,6 +132,13 @@ export async function createDocumento(data: {
 
   const tenantId = await getTenantId(supabase, authData.user.id)
   if (!tenantId) return { error: "Empresa não encontrada." }
+
+  // Verificar rate limit para criação de documentos
+  const rateLimitCheck = await checkRateLimit(RATE_LIMIT_CONFIGS.CREATE_DOCUMENT, authData.user.email || '')
+  if (!rateLimitCheck.allowed) {
+    await recordAttempt(RATE_LIMIT_CONFIGS.CREATE_DOCUMENT, authData.user.email || '', false, 'Rate limit excedido', tenantId)
+    return { error: `Muitas operações. Aguarde alguns minutos antes de criar novo documento.` }
+  }
 
   try {
 
@@ -272,9 +281,13 @@ export async function createDocumento(data: {
       result: 'success',
     })
 
+    // Registrar sucesso de rate limit
+    await recordAttempt(RATE_LIMIT_CONFIGS.CREATE_DOCUMENT, authData.user.email || '', true, undefined, tenantId)
+
     revalidatePath(data.tipo === 'ORCAMENTO' ? "/orcamentos" : "/pedidos")
     return { success: true, id: pedido.id }
   } catch (err: any) {
+    await recordAttempt(RATE_LIMIT_CONFIGS.CREATE_DOCUMENT, authData.user.email || '', false, err.message, tenantId)
     await logAudit({
       tenantId,
       userId: authData.user.id,
