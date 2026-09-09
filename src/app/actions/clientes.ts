@@ -28,6 +28,7 @@ export async function createCliente(formData: FormData) {
       codigo: formData.get("codigo") as string,
       nome: formData.get("nome") as string,
       documento: formData.get("documento") as string,
+      inscricao: formData.get("inscricao") as string,
       celular: formData.get("celular") as string,
       email: formData.get("email") as string,
       cep: formData.get("cep") as string,
@@ -65,6 +66,7 @@ export async function createCliente(formData: FormData) {
       codigo: rawData.codigo,
       nome,
       cpf_cnpj: documento,
+      inscricao: rawData.inscricao,
       celular,
       email,
       cep,
@@ -111,6 +113,7 @@ export async function updateCliente(id: string, formData: FormData) {
       codigo: formData.get("codigo") as string,
       nome: formData.get("nome") as string,
       documento: formData.get("documento") as string,
+      inscricao: formData.get("inscricao") as string,
       celular: formData.get("celular") as string,
       email: formData.get("email") as string,
       cep: formData.get("cep") as string,
@@ -144,8 +147,8 @@ export async function updateCliente(id: string, formData: FormData) {
       }
     }
 
-    const updatePayload: any = { 
-      codigo, nome, cpf_cnpj: documento, celular, email, cep, rua, numero, complemento, bairro, cidade, estado 
+    const updatePayload: any = {
+      codigo, nome, cpf_cnpj: documento, inscricao: rawData.inscricao, celular, email, cep, rua, numero, complemento, bairro, cidade, estado
     }
     
     if (isAdmin) {

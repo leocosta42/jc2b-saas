@@ -12,6 +12,7 @@ interface Props {
     codigo?: string
     nome: string
     cpf_cnpj?: string
+    inscricao?: string
     celular?: string
     email?: string
     cep?: string
@@ -118,6 +119,10 @@ export function EditarClienteForm({ cliente }: Props) {
                 <div className="space-y-2">
                   <label htmlFor="documento" className="text-sm font-medium leading-none">CPF/CNPJ</label>
                   <input id="documento" name="documento" defaultValue={cliente.cpf_cnpj || ""} placeholder="000.000.000-00" className={inputClass} />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="inscricao" className="text-sm font-medium leading-none">Insc. Estadual</label>
+                  <input id="inscricao" name="inscricao" defaultValue={cliente.inscricao || ""} placeholder="Opcional para PF" className={inputClass} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <label htmlFor="bloqueado" className="text-sm font-medium leading-none text-red-500">Status de Bloqueio</label>

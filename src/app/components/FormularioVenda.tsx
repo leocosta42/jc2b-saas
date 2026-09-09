@@ -339,6 +339,7 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
               {clienteSelecionado && (
                 <div className="sm:col-span-2 bg-muted/20 p-3 rounded-lg text-sm grid grid-cols-2 gap-2 text-muted-foreground">
                   <div><strong className="text-foreground">Doc:</strong> {clienteSelecionado.cpf_cnpj || '-'}</div>
+                  <div><strong className="text-foreground">Insc.Est:</strong> {clienteSelecionado.inscricao || '-'}</div>
                   <div><strong className="text-foreground">Contato:</strong> {clienteSelecionado.celular || '-'}</div>
                   <div><strong className="text-foreground">Email:</strong> {clienteSelecionado.email || '-'}</div>
                   <div><strong className="text-foreground">CEP:</strong> {clienteSelecionado.cep || '-'}</div>
