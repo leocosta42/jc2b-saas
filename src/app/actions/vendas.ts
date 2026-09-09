@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { logAudit } from "@/app/lib/audit"
 
 async function getTenantId(supabase: any, userId: string): Promise<string | null> {
   const { data: profile } = await supabase
@@ -123,13 +124,14 @@ export async function createDocumento(data: {
     unidade_medida: string
   }>
 }) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada." }
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return { error: "Empresa não encontrada." }
+
+  try {
 
     // 0. Validar que todo produto_id enviado realmente pertence a este tenant
     // (evita que um pedido/orcamento seja criado referenciando produto_id de
@@ -185,7 +187,18 @@ export async function createDocumento(data: {
       .select('id')
       .single()
 
-    if (pedidoError) return { error: "Erro ao criar documento: " + pedidoError.message }
+    if (pedidoError) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'CREATE',
+        resourceType: data.tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido',
+        result: 'error',
+        errorMessage: pedidoError.message,
+      })
+      return { error: "Erro ao criar documento: " + pedidoError.message }
+    }
 
     // 2. Preparar e inserir os itens
     const itensToInsert = data.itens.map(item => ({
@@ -235,9 +248,42 @@ export async function createDocumento(data: {
       }
     }
 
+    const resourceName = data.tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'
+    const resourceType = data.tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido'
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType,
+      resourceId: pedido.id,
+      resourceName: `${resourceName} #${pedido.id.substring(0, 8)}`,
+      changes: {
+        after: {
+          tipo: data.tipo,
+          cliente_id: data.cliente_id,
+          vendedor_id: data.vendedor_id,
+          data_emissao: data.data_emissao,
+          itens_count: data.itens.length,
+          valor_total: data.itens.reduce((sum: number, item: any) => sum + (item.quantidade * item.preco_unitario), 0)
+        }
+      },
+      result: 'success',
+    })
+
     revalidatePath(data.tipo === 'ORCAMENTO' ? "/orcamentos" : "/pedidos")
     return { success: true, id: pedido.id }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: data.tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido',
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
@@ -317,13 +363,21 @@ export async function convertToPedido(id: string) {
 }
 
 export async function deleteDocumento(id: string, tipo: 'ORCAMENTO' | 'PEDIDO') {
-  try {
-    const supabase = await createClient()
-    const { data: authData } = await supabase.auth.getUser()
-    if (!authData?.user) return { error: "Não autenticado" }
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  if (!authData?.user) return { error: "Não autenticado" }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada" }
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return { error: "Empresa não encontrada" }
+
+  try {
+    // Buscar documento ANTES de deletar (para auditoria)
+    const { data: documentoAntigo } = await supabase
+      .from('pedidos')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single()
 
     // Se for PEDIDO, precisa devolver o estoque antes de apagar
     if (tipo === 'PEDIDO') {
@@ -346,12 +400,48 @@ export async function deleteDocumento(id: string, tipo: 'ORCAMENTO' | 'PEDIDO') 
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
-    if (error) return { error: error.message }
+    if (error) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'DELETE',
+        resourceType: tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido',
+        resourceId: id,
+        result: 'error',
+        errorMessage: error.message,
+      })
+      return { error: error.message }
+    }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido',
+      resourceId: id,
+      resourceName: documentoAntigo?.id?.substring(0, 8),
+      changes: {
+        before: documentoAntigo,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/orcamentos")
     revalidatePath("/pedidos")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro: " + err.message }
   }
 }
@@ -381,13 +471,21 @@ export async function getPedidoCompletoById(id: string) {
 }
 
 export async function updateDocumento(id: string, data: any) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const tenantId = await getTenantId(supabase, authData.user.id)
-    if (!tenantId) return { error: "Empresa não encontrada." }
+  const tenantId = await getTenantId(supabase, authData.user.id)
+  if (!tenantId) return { error: "Empresa não encontrada." }
+
+  try {
+    // Buscar documento ANTES de atualizar (para auditoria)
+    const { data: documentoAntigo } = await supabase
+      .from('pedidos')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single()
 
     // 0. Validar que todo produto_id enviado pertence a este tenant, antes
     // de mexer em qualquer coisa (mesmo motivo do createDocumento).
@@ -435,7 +533,19 @@ export async function updateDocumento(id: string, data: any) {
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
-    if (pedidoError) return { error: "Erro ao atualizar documento: " + pedidoError.message }
+    if (pedidoError) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'UPDATE',
+        resourceType: data.tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido',
+        resourceId: id,
+        result: 'error',
+        errorMessage: pedidoError.message,
+      })
+      return { error: "Erro ao atualizar documento: " + pedidoError.message }
+    }
 
     // 4. Insert new items
     const itensToInsert = data.itens.map((item: any) => ({
@@ -474,9 +584,47 @@ export async function updateDocumento(id: string, data: any) {
       }
     }
 
+    const updatePayload = {
+      cliente_id: data.cliente_id,
+      vendedor_id: data.vendedor_id || null,
+      data_emissao: data.data_emissao,
+      data_entrega: data.data_entrega || null,
+      forma_pagamento: data.forma_pagamento,
+      observacoes: data.observacoes,
+      valor_frete: data.valor_frete || 0,
+      tipo_frete: data.tipo_frete || 'CIF',
+      desconto_total: data.desconto_total || 0,
+      peso_total: data.peso_total ?? null
+    }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: data.tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido',
+      resourceId: id,
+      resourceName: documentoAntigo?.id?.substring(0, 8),
+      changes: {
+        before: documentoAntigo,
+        after: { ...updatePayload, itens_count: data.itens?.length || 0 },
+      },
+      result: 'success',
+    })
+
     revalidatePath(data.tipo === 'ORCAMENTO' ? "/orcamentos" : "/pedidos")
     return { success: true, id }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: data.tipo === 'ORCAMENTO' ? 'orcamento' : 'pedido',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
