@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { logAudit } from "@/app/lib/audit"
 
 const MOTIVOS_VALIDOS = ['entrada_manual', 'devolucao', 'perda', 'contagem'] as const
 
@@ -15,17 +16,18 @@ async function getProfile(supabase: any, userId: string) {
 }
 
 export async function criarAjusteEstoque(formData: FormData) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const profile = await getProfile(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
-    const tenantId = profile.tenant_id
-    const role = profile.role?.toLowerCase() || ''
-    const isAdmin = ['admin', 'gerente', 'dono'].includes(role)
-    if (!isAdmin) return { error: "Sem permissão para ajustar o estoque." }
+  const profile = await getProfile(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+  const tenantId = profile.tenant_id
+  const role = profile.role?.toLowerCase() || ''
+  const isAdmin = ['admin', 'gerente', 'dono'].includes(role)
+  if (!isAdmin) return { error: "Sem permissão para ajustar o estoque." }
+
+  try {
 
     const produtoId = formData.get("produto_id") as string
     const motivo = formData.get("motivo") as string
@@ -52,19 +54,32 @@ export async function criarAjusteEstoque(formData: FormData) {
       return { error: `O saldo de "${produto.nome}" já é ${quantidadeAnterior}. Informe um valor diferente para registrar o ajuste.` }
     }
 
+    const adjustmentPayload = {
+      tenant_id: tenantId,
+      produto_id: produtoId,
+      usuario_id: authData.user.id,
+      quantidade_anterior: quantidadeAnterior,
+      quantidade_nova: quantidadeNova,
+      motivo,
+      observacoes,
+    }
+
     const { error: insertError } = await supabase
       .from('ajustes_estoque')
-      .insert({
-        tenant_id: tenantId,
-        produto_id: produtoId,
-        usuario_id: authData.user.id,
-        quantidade_anterior: quantidadeAnterior,
-        quantidade_nova: quantidadeNova,
-        motivo,
-        observacoes,
-      })
+      .insert(adjustmentPayload)
 
     if (insertError) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'CREATE',
+        resourceType: 'estoque',
+        resourceId: produtoId,
+        resourceName: produto.nome,
+        result: 'error',
+        errorMessage: insertError.message,
+      })
       return { error: "Erro ao registrar ajuste: " + insertError.message }
     }
 
@@ -75,13 +90,52 @@ export async function criarAjusteEstoque(formData: FormData) {
       .eq('tenant_id', tenantId)
 
     if (updateError) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'CREATE',
+        resourceType: 'estoque',
+        resourceId: produtoId,
+        resourceName: produto.nome,
+        result: 'error',
+        errorMessage: updateError.message,
+      })
       return { error: "Ajuste registrado, mas houve erro ao atualizar o saldo do produto: " + updateError.message }
     }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'estoque',
+      resourceId: produtoId,
+      resourceName: produto.nome,
+      changes: {
+        after: {
+          quantidade_anterior: quantidadeAnterior,
+          quantidade_nova: quantidadeNova,
+          motivo,
+          observacoes,
+        },
+      },
+      result: 'success',
+    })
 
     revalidatePath("/estoque")
     revalidatePath("/estoque/ajustes")
     return { success: true, produtoNome: produto.nome }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'estoque',
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
