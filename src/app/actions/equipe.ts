@@ -80,13 +80,17 @@ export async function deactivateUser(userIdToDeactivate: string) {
       return { error: "Você não pode desativar sua própria conta." }
     }
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('profiles')
       .update({ ativo: false })
       .eq('id', userIdToDeactivate)
       .eq('tenant_id', profile.tenant_id)
+      .select()
 
     if (error) throw error
+    if (!data || data.length === 0) {
+      return { error: "Usuário não encontrado ou não pertence à sua empresa." }
+    }
 
     revalidatePath("/equipe")
     return { success: true }
@@ -105,8 +109,8 @@ export async function deleteUser(userIdToDelete: string) {
     if (!profile.tenant_id) return { error: "Tenant não encontrado." }
 
     const role = profile.role?.toLowerCase() || ''
-    const isDono = role === 'dono'
-    if (!isDono) return { error: "Apenas o dono pode deletar usuários." }
+    const canDelete = ['admin', 'gerente', 'dono'].includes(role)
+    if (!canDelete) return { error: "Você não tem permissão para deletar usuários." }
 
     // Não permite deletar a si mesmo
     if (userIdToDelete === authData.user.id) {
