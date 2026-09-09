@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { clienteSchema } from "./schema"
+import { logAudit } from "@/app/lib/audit"
 
 async function getTenantAndRole(supabase: any, userId: string) {
   const { data: profile } = await supabase
@@ -14,14 +15,15 @@ async function getTenantAndRole(supabase: any, userId: string) {
 }
 
 export async function createCliente(formData: FormData) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado. Faça login para continuar." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado. Faça login para continuar." }
 
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada. Execute o script de correção no Supabase." }
-    const tenantId = profile.tenant_id
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada. Execute o script de correção no Supabase." }
+  const tenantId = profile.tenant_id
+
+  try {
     const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
 
     const rawData = {
@@ -88,12 +90,44 @@ export async function createCliente(formData: FormData) {
 
     if (error) {
       console.error("Erro ao inserir cliente:", error)
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'CREATE',
+        resourceType: 'cliente',
+        resourceName: nome,
+        result: 'error',
+        errorMessage: error.message,
+      })
       return { error: "Erro no banco de dados: " + error.message }
     }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'cliente',
+      resourceName: nome,
+      changes: {
+        after: insertPayload,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/clientes")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'cliente',
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
