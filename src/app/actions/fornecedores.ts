@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { fornecedorSchema } from "./schema"
+import { logAudit } from "@/app/lib/audit"
 
 async function getTenantAndRole(supabase: any, userId: string) {
   const { data: profile } = await supabase
@@ -14,16 +15,16 @@ async function getTenantAndRole(supabase: any, userId: string) {
 }
 
 export async function createFornecedor(formData: FormData) {
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado. Faça login para continuar." }
+
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada. Execute o script de correção no Supabase." }
+  const tenantId = profile.tenant_id
+  const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
+
   try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado. Faça login para continuar." }
-
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada. Execute o script de correção no Supabase." }
-    const tenantId = profile.tenant_id
-    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
-
     const rawData = {
       codigo: formData.get("codigo") as string,
       nome: formData.get("nome") as string,
@@ -86,26 +87,66 @@ export async function createFornecedor(formData: FormData) {
 
     if (error) {
       console.error("Erro ao inserir fornecedor:", error)
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'CREATE',
+        resourceType: 'fornecedor',
+        resourceName: nome,
+        result: 'error',
+        errorMessage: error.message,
+      })
       return { error: "Erro no banco de dados: " + error.message }
     }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'fornecedor',
+      resourceName: nome,
+      changes: {
+        after: insertPayload,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/fornecedores")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'fornecedor',
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
 
 export async function updateFornecedor(id: string, formData: FormData) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
-    const tenantId = profile.tenant_id
-    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+  const tenantId = profile.tenant_id
+  const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
+
+  try {
+    // Buscar fornecedor ANTES de atualizar (para auditoria)
+    const { data: fornecedorAntigo } = await supabase
+      .from('fornecedores')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single()
 
     const rawData = {
       codigo: formData.get("codigo") as string,
@@ -158,24 +199,70 @@ export async function updateFornecedor(id: string, formData: FormData) {
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
-    if (error) return { error: "Erro ao atualizar: " + error.message }
+    if (error) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'UPDATE',
+        resourceType: 'fornecedor',
+        resourceId: id,
+        resourceName: nome,
+        result: 'error',
+        errorMessage: error.message,
+      })
+      return { error: "Erro ao atualizar: " + error.message }
+    }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: 'fornecedor',
+      resourceId: id,
+      resourceName: nome,
+      changes: {
+        before: fornecedorAntigo,
+        after: updatePayload,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/fornecedores")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: 'fornecedor',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
 
 export async function deleteFornecedor(id: string) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
-    const tenantId = profile.tenant_id
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+  const tenantId = profile.tenant_id
+
+  try {
+    // Buscar fornecedor ANTES de deletar (para auditoria)
+    const { data: fornecedorAntigo } = await supabase
+      .from('fornecedores')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single()
 
     const { error } = await supabase
       .from('fornecedores')
@@ -183,11 +270,48 @@ export async function deleteFornecedor(id: string) {
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
-    if (error) return { error: "Erro ao excluir: " + error.message }
+    if (error) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'DELETE',
+        resourceType: 'fornecedor',
+        resourceId: id,
+        result: 'error',
+        errorMessage: error.message,
+      })
+      return { error: "Erro ao excluir: " + error.message }
+    }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: 'fornecedor',
+      resourceId: id,
+      resourceName: fornecedorAntigo?.nome,
+      changes: {
+        before: fornecedorAntigo,
+        after: { ativo: false },
+      },
+      result: 'success',
+    })
 
     revalidatePath("/fornecedores")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: 'fornecedor',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
