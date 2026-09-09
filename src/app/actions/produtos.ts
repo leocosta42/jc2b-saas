@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { logAudit } from "@/app/lib/audit"
 
 async function getTenantAndRole(supabase: any, userId: string) {
   const { data: profile } = await supabase
@@ -13,17 +14,17 @@ async function getTenantAndRole(supabase: any, userId: string) {
 }
 
 export async function createProduto(formData: FormData) {
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+  const tenantId = profile.tenant_id
+  const role = profile.role?.toLowerCase() || ''
+  const isAdmin = ['admin', 'gerente', 'dono'].includes(role) || !profile.role // Se não tiver role definida, assumimos admin temporariamente para evitar o bug do estoque zerado
+
   try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
-
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
-    const tenantId = profile.tenant_id
-    const role = profile.role?.toLowerCase() || ''
-    const isAdmin = ['admin', 'gerente', 'dono'].includes(role) || !profile.role // Se não tiver role definida, assumimos admin temporariamente para evitar o bug do estoque zerado
-
     const codigo = formData.get("codigo") as string
     const descricao = formData.get("descricao") as string
     const um = formData.get("um") as string
@@ -73,27 +74,67 @@ export async function createProduto(formData: FormData) {
 
     if (error) {
       console.error("Erro ao inserir produto:", error)
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'CREATE',
+        resourceType: 'produto',
+        resourceName: descricao,
+        result: 'error',
+        errorMessage: error.message,
+      })
       return { error: "Erro no banco de dados: " + error.message }
     }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'produto',
+      resourceName: descricao,
+      changes: {
+        after: insertPayload,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/estoque")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'CREATE',
+      resourceType: 'produto',
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
 
 export async function updateProduto(id: string, formData: FormData) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
-    const tenantId = profile.tenant_id
-    const role = profile.role?.toLowerCase() || ''
-    const isAdmin = ['admin', 'gerente', 'dono'].includes(role) || !profile.role
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+  const tenantId = profile.tenant_id
+  const role = profile.role?.toLowerCase() || ''
+  const isAdmin = ['admin', 'gerente', 'dono'].includes(role) || !profile.role
+
+  try {
+    // Buscar produto ANTES de atualizar (para auditoria)
+    const { data: produtoAntigo } = await supabase
+      .from('produtos')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single()
 
     const codigo = formData.get("codigo") as string
     const descricao = formData.get("descricao") as string
@@ -142,25 +183,69 @@ export async function updateProduto(id: string, formData: FormData) {
 
     if (error) {
       console.error("Erro ao atualizar produto:", error)
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'UPDATE',
+        resourceType: 'produto',
+        resourceId: id,
+        resourceName: descricao,
+        result: 'error',
+        errorMessage: error.message,
+      })
       return { error: "Erro no banco de dados: " + error.message }
     }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: 'produto',
+      resourceId: id,
+      resourceName: descricao,
+      changes: {
+        before: produtoAntigo,
+        after: updatePayload,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/estoque")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: 'produto',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
 
 export async function deleteProduto(id: string) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
-    const tenantId = profile.tenant_id
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+  const tenantId = profile.tenant_id
+
+  try {
+    // Buscar produto ANTES de deletar (para auditoria)
+    const { data: produtoAntigo } = await supabase
+      .from('produtos')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single()
 
     const { error } = await supabase
       .from('produtos')
@@ -170,15 +255,50 @@ export async function deleteProduto(id: string) {
 
     if (error) {
       console.error("Erro ao deletar produto:", error)
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'DELETE',
+        resourceType: 'produto',
+        resourceId: id,
+        result: 'error',
+        errorMessage: error.message,
+      })
       if (error.code === '23503') {
         return { error: "Não é possível excluir este produto pois ele já está vinculado a um ou mais pedidos/orçamentos. Para manter o histórico correto, considere apenas desativá-lo." }
       }
       return { error: "Erro no banco de dados: " + error.message }
     }
 
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: 'produto',
+      resourceId: id,
+      resourceName: produtoAntigo?.nome,
+      changes: {
+        before: produtoAntigo,
+        after: { ativo: false },
+      },
+      result: 'success',
+    })
+
     revalidatePath("/estoque")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: 'produto',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
