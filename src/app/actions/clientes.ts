@@ -133,15 +133,23 @@ export async function createCliente(formData: FormData) {
 }
 
 export async function updateCliente(id: string, formData: FormData) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
-    const tenantId = profile.tenant_id
-    const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+  const tenantId = profile.tenant_id
+  const isAdmin = profile.role === 'admin' || profile.role === 'gerente'
+
+  try {
+    // Buscar cliente ANTES de atualizar (para auditoria)
+    const { data: clienteAntigo } = await supabase
+      .from('clientes')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single()
 
     const rawData = {
       codigo: formData.get("codigo") as string,
@@ -184,7 +192,7 @@ export async function updateCliente(id: string, formData: FormData) {
     const updatePayload: any = {
       codigo, nome, cpf_cnpj: documento, inscricao: rawData.inscricao, celular, email, cep, rua, numero, complemento, bairro, cidade, estado
     }
-    
+
     if (isAdmin) {
       updatePayload.bloqueado = bloqueado
     }
@@ -195,24 +203,70 @@ export async function updateCliente(id: string, formData: FormData) {
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
-    if (error) return { error: "Erro ao atualizar: " + error.message }
+    if (error) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'UPDATE',
+        resourceType: 'cliente',
+        resourceId: id,
+        resourceName: nome,
+        result: 'error',
+        errorMessage: error.message,
+      })
+      return { error: "Erro ao atualizar: " + error.message }
+    }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: 'cliente',
+      resourceId: id,
+      resourceName: nome,
+      changes: {
+        before: clienteAntigo,
+        after: updatePayload,
+      },
+      result: 'success',
+    })
 
     revalidatePath("/clientes")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'UPDATE',
+      resourceType: 'cliente',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
 
 export async function deleteCliente(id: string) {
-  try {
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData?.user) return { error: "Usuário não autenticado." }
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return { error: "Usuário não autenticado." }
 
-    const profile = await getTenantAndRole(supabase, authData.user.id)
-    if (!profile.tenant_id) return { error: "Empresa não encontrada." }
-    const tenantId = profile.tenant_id
+  const profile = await getTenantAndRole(supabase, authData.user.id)
+  if (!profile.tenant_id) return { error: "Empresa não encontrada." }
+  const tenantId = profile.tenant_id
+
+  try {
+    // Buscar cliente ANTES de deletar (para auditoria)
+    const { data: clienteAntigo } = await supabase
+      .from('clientes')
+      .select('*')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single()
 
     const { error } = await supabase
       .from('clientes')
@@ -220,11 +274,49 @@ export async function deleteCliente(id: string) {
       .eq('id', id)
       .eq('tenant_id', tenantId)
 
-    if (error) return { error: "Erro ao excluir: " + error.message }
+    if (error) {
+      await logAudit({
+        tenantId,
+        userId: authData.user.id,
+        userEmail: authData.user.email,
+        action: 'DELETE',
+        resourceType: 'cliente',
+        resourceId: id,
+        resourceName: clienteAntigo?.nome,
+        result: 'error',
+        errorMessage: error.message,
+      })
+      return { error: "Erro ao excluir: " + error.message }
+    }
+
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: 'cliente',
+      resourceId: id,
+      resourceName: clienteAntigo?.nome,
+      changes: {
+        before: clienteAntigo,
+        after: { ativo: false },
+      },
+      result: 'success',
+    })
 
     revalidatePath("/clientes")
     return { success: true }
   } catch (err: any) {
+    await logAudit({
+      tenantId,
+      userId: authData.user.id,
+      userEmail: authData.user.email,
+      action: 'DELETE',
+      resourceType: 'cliente',
+      resourceId: id,
+      result: 'error',
+      errorMessage: err.message,
+    })
     return { error: "Erro inesperado: " + (err.message || String(err)) }
   }
 }
