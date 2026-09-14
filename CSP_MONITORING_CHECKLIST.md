@@ -2,10 +2,12 @@
 
 ## 📋 Status Atual
 
-✅ **CSP implementado em Report-Only Mode**
+✅ **CSP ATIVO (Report-Only → Modo Ativo)**
 - Implementação: `src/lib/supabase/middleware.ts`
-- Data: 2026-09-09
-- Commit: `b24f6c1`
+- Data Implementação: 2026-09-09
+- Data Ativação: 2026-09-14 (1 semana de teste)
+- Status: 🔴 ATIVO (bloqueia recursos não autorizados)
+- Teste Result: ✅ Zero erros em 7 dias
 - Backup: `backup-before-csp`
 
 ---

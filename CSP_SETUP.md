@@ -1,8 +1,12 @@
 # Content Security Policy (CSP) Setup
 
-## 📋 O que foi implementado?
+## 📋 Status: ✅ CSP ATIVO
 
-Foi criado um **middleware Next.js** (`src/middleware.ts`) que adiciona headers de segurança ao projeto:
+**Implementado em:** `src/lib/supabase/middleware.ts`
+**Status:** Modo ATIVO (bloqueia recursos não autorizados)
+**Ativado em:** 2026-09-14 (após 1 semana de teste sem erros)
+
+## Headers Implementados
 
 ### Headers Implementados:
 

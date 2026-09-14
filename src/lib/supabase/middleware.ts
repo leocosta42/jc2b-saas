@@ -54,9 +54,9 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // CSP Header em "report-only" mode (não bloqueia, apenas avisa)
+  // CSP Header em modo ATIVO (bloqueia recursos não autorizados)
   supabaseResponse.headers.set(
-    'Content-Security-Policy-Report-Only',
+    'Content-Security-Policy',
     [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
