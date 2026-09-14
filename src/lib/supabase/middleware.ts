@@ -1,10 +1,34 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Domínios permitidos para CORS
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'https://jc2b-saas.vercel.app',
+  'https://jc2b.com.br',
+]
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
+
+  // Adicionar headers CORS
+  const origin = request.headers.get('origin') || ''
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    supabaseResponse.headers.set('Access-Control-Allow-Origin', origin)
+    supabaseResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+    supabaseResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+    supabaseResponse.headers.set('Access-Control-Allow-Credentials', 'true')
+    supabaseResponse.headers.set('Access-Control-Max-Age', '86400')
+  }
+
+  // Handle preflight requests
+  if (request.method === 'OPTIONS') {
+    return supabaseResponse
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
