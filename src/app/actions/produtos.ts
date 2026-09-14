@@ -74,7 +74,6 @@ export async function createProduto(formData: FormData) {
       .insert(insertPayload)
 
     if (error) {
-      console.error("Erro ao inserir produto:", error)
       await logAudit({
         tenantId,
         userId: authData.user.id,
@@ -183,7 +182,6 @@ export async function updateProduto(id: string, formData: FormData) {
       .eq('tenant_id', tenantId)
 
     if (error) {
-      console.error("Erro ao atualizar produto:", error)
       await logAudit({
         tenantId,
         userId: authData.user.id,
@@ -255,7 +253,6 @@ export async function deleteProduto(id: string) {
       .eq('tenant_id', tenantId)
 
     if (error) {
-      console.error("Erro ao deletar produto:", error)
       await logAudit({
         tenantId,
         userId: authData.user.id,

@@ -38,7 +38,6 @@ export function NovoVendedorForm({ nextCodigo }: Props) {
           alert("CEP não encontrado. Verifique o número digitado.")
         }
       } catch (e) {
-        console.error("Erro ao buscar CEP", e)
       } finally {
         setBuscandoCep(false)
       }

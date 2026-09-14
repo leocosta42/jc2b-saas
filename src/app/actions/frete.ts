@@ -57,7 +57,6 @@ export async function simularMelhorEnvio(cepOrigem: string, cepDestino: string, 
 
     if (!response.ok) {
       const errText = await response.text()
-      console.error("Melhor Envio API Error:", errText)
       
       let errorDetail = errText
       try {
@@ -94,7 +93,6 @@ export async function simularMelhorEnvio(cepOrigem: string, cepDestino: string, 
     return { data: validOptions }
 
   } catch (error: any) {
-    console.error("Erro requisição Melhor Envio:", error)
     return { error: "Erro interno ao calcular frete." }
   }
 }

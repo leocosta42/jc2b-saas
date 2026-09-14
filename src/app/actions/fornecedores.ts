@@ -86,7 +86,6 @@ export async function createFornecedor(formData: FormData) {
       .insert(insertPayload)
 
     if (error) {
-      console.error("Erro ao inserir fornecedor:", error)
       await logAudit({
         tenantId,
         userId: authData.user.id,

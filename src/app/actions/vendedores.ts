@@ -21,7 +21,6 @@ export async function createVendedor(formData: FormData) {
 
   // Sistema de Auto-Cura (Auto-Healing) caso o Trigger do Banco falhe ou não tenha sido rodado
   if (!profile?.tenant_id) {
-    console.log("Perfil não encontrado. Tentando auto-cura...")
 
     // 1. Acha ou cria a empresa principal
     let { data: tenant } = await supabase
@@ -105,7 +104,6 @@ export async function createVendedor(formData: FormData) {
       .insert(insertPayload)
 
     if (error) {
-      console.error("Erro ao inserir vendedor:", error)
       await logAudit({
         tenantId: profile.tenant_id,
         userId: authData.user.id,
@@ -135,7 +133,6 @@ export async function createVendedor(formData: FormData) {
     revalidatePath("/vendedores")
     return { success: true }
   } catch (err: any) {
-    console.error("Erro interno no servidor:", err)
     await logAudit({
       tenantId: profile.tenant_id,
       userId: authData.user.id,

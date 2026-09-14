@@ -68,7 +68,6 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
           .range(from, to)
           
         if (testError) {
-          console.error("ERRO BUSCA CLIENTES:", testError)
         }
           
         if (!testError && testData) {
@@ -92,7 +91,6 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
       }
     }
   } catch (e) {
-    console.warn("Supabase não configurado ou erro ao buscar clientes. Usando mock data.", e)
   }
 
   return (

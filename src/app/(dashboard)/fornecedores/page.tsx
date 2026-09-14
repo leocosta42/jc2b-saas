@@ -93,7 +93,6 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
       }
     }
   } catch (e) {
-    console.warn("Supabase não configurado ou erro ao buscar fornecedores. Usando mock data.", e)
   }
 
   return (

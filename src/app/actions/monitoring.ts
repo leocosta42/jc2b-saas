@@ -3,6 +3,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { getAuditLog } from "@/app/lib/audit"
 
+interface Alert {
+  severity: 'high' | 'medium' | 'low'
+  type: string
+  message: string
+  timestamp: Date
+}
+
 async function getTenantAndRole(supabase: any, userId: string) {
   const { data: profile } = await supabase
     .from('profiles')
@@ -84,7 +91,7 @@ export async function detectSecurityThreats() {
     if (!profile.tenant_id) return { error: "Tenant não encontrado" }
 
     const tenantId = profile.tenant_id
-    const alerts: any[] = []
+    const alerts: Alert[] = []
 
     // 1. Múltiplas tentativas de login falhadas
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000)

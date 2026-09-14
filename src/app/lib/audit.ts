@@ -69,11 +69,9 @@ export async function logAudit(params: AuditLogParams) {
       })
 
     if (error) {
-      console.error('Erro ao registrar auditoria:', error)
       // Não throw - não queremos que erro de auditoria quebre a aplicação
     }
   } catch (error) {
-    console.error('Erro ao registrar auditoria:', error)
     // Silenciosamente falha
   }
 }

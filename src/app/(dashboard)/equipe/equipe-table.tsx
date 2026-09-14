@@ -5,7 +5,16 @@ import { updateRole, deactivateUser, deleteUser } from '@/app/actions/equipe'
 import { useRouter } from 'next/navigation'
 import { User, ShieldAlert, Check, Loader2, Lock, Trash2 } from 'lucide-react'
 
-export function EquipeTable({ data }: { data: any[] }) {
+interface Profile {
+  id: string
+  full_name: string | null
+  email?: string
+  role: string
+  ativo: boolean
+  created_at?: string
+}
+
+export function EquipeTable({ data }: { data: Profile[] }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [loadingId, setLoadingId] = useState<string | null>(null)

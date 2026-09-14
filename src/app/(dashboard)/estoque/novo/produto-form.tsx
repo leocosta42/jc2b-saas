@@ -6,16 +6,39 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { createProduto, updateProduto } from '@/app/actions/produtos'
 
-export function ProdutoForm({ 
-  fornecedores, 
+interface Fornecedor {
+  id: string
+  nome: string
+  email?: string
+  telefone?: string
+  codigo?: string
+}
+
+interface Produto {
+  id?: string
+  sku?: string
+  um?: string
+  preco_custo?: number
+  preco_venda?: number
+  nome?: string
+  peso?: number
+  ncm?: string
+  bloqueado?: boolean
+  quantidade_estoque?: number
+  fornecedor_id?: string
+  codigo?: string
+}
+
+export function ProdutoForm({
+  fornecedores,
   nextSku,
   produtoCopiar,
   isEdit,
   editId
-}: { 
-  fornecedores: any[], 
+}: {
+  fornecedores: Fornecedor[],
   nextSku: string,
-  produtoCopiar?: any,
+  produtoCopiar?: Produto,
   isEdit?: boolean,
   editId?: string | null
 }) {

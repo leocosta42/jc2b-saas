@@ -74,7 +74,6 @@ export async function checkRateLimit(
       .gte('created_at', timeWindowStart.toISOString())
 
     if (error) {
-      console.error('Erro ao verificar rate limit:', error)
       // Em caso de erro, permitir (fail open)
       return { allowed: true, remaining: config.maxAttempts }
     }
@@ -97,7 +96,6 @@ export async function checkRateLimit(
       error: allowed ? undefined : `Muitas tentativas. Tente novamente em ${config.windowMinutes} minuto(s)`
     }
   } catch (error) {
-    console.error('Erro crítico em rate limit:', error)
     // Em caso de erro, permitir (fail open)
     return { allowed: true, remaining: 0 }
   }
@@ -128,7 +126,6 @@ export async function recordAttempt(
       })
   } catch (error) {
     // Log silenciosamente - não queremos que erros de rate limiting quebre a app
-    console.error('Erro ao registrar tentativa:', error)
   }
 }
 

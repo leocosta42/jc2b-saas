@@ -154,7 +154,13 @@ export async function createDocumento(data: {
       .eq('tenant_id', tenantId)
       .in('id', produtoIdsSolicitados)
 
-    const produtosCache: any[] = produtosEncontrados || []
+    interface ProdutoCache {
+      id: string
+      quantidade_estoque: number
+      nome: string
+      sku: string
+    }
+    const produtosCache: ProdutoCache[] = produtosEncontrados || []
     const idsEncontrados = new Set(produtosCache.map(p => p.id))
     const idsInvalidos = produtoIdsSolicitados.filter(id => !idsEncontrados.has(id))
     if (idsInvalidos.length > 0) {
@@ -318,7 +324,13 @@ export async function convertToPedido(id: string) {
 
     // Validar estoque ANTES de converter (checagem otimista - a garantia
     // final vem do UPDATE atomico em ajustar_estoque() mais abaixo)
-    let produtosCache: any[] = []
+    interface ProdutoItem {
+      id: string
+      quantidade_estoque: number
+      nome: string
+      sku: string
+    }
+    let produtosCache: ProdutoItem[] = []
     if (itens) {
       const produtoIds = itens.map(i => i.produto_id)
       const { data: produtos } = await supabase.from('produtos').select('id, quantidade_estoque, nome, sku').eq('tenant_id', tenantId).in('id', produtoIds)

@@ -59,7 +59,6 @@ export default async function VendedoresPage() {
       }
     }
   } catch (e) {
-    console.warn("Supabase não configurado ou erro ao buscar vendedores. Usando mock data.", e)
   }
 
   return (

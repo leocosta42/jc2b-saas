@@ -106,7 +106,6 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
       }
     }
   } catch (error) {
-    console.warn("⚠️ Usando mock data para o estoque.")
   }
 
   return (

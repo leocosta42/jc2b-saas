@@ -34,7 +34,6 @@ export async function getTenantConfig() {
 
     return data
   } catch (error) {
-    console.error("Erro ao buscar configurações:", error)
     return null
   }
 }

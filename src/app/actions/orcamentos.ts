@@ -141,7 +141,6 @@ export async function createOrcamento(data: OrcamentoData) {
     revalidatePath("/orcamentos")
     return { success: true }
   } catch (err: any) {
-    console.error("Erro interno no servidor:", err)
     return { error: "Ocorreu um erro inesperado no servidor: " + (err.message || String(err)) }
   }
 }

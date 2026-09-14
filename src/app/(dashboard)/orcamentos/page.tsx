@@ -87,7 +87,6 @@ export default async function OrcamentosPage({ searchParams }: { searchParams: P
       }
     }
   } catch (e) {
-    console.error("Erro ao buscar dados:", e)
   }
 
   return (
