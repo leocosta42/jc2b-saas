@@ -62,7 +62,7 @@ export async function getTenantConfigPublico(tenantId: string) {
 
   const { data } = await supabase
     .from('tenants')
-    .select('id, name, cnpj, telefone, email, endereco, cep, logo_url')
+    .select('id, name, cnpj, inscricao_estadual, telefone, email, endereco, cep, logo_url')
     .eq('id', tenantId)
     .single()
 

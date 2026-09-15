@@ -109,6 +109,7 @@ export function DocumentoPdf({ doc, config }: { doc: any; config: any }) {
               {'\n'}
               {[config?.telefone, config?.email].filter(Boolean).join(' | ')}
               {config?.cnpj ? `\nCNPJ: ${config.cnpj}` : ''}
+              {config?.inscricao_estadual ? `  |  IE: ${config.inscricao_estadual}` : ''}
             </Text>
           </View>
         </View>

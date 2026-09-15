@@ -135,7 +135,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
               {config?.telefone && <span>{config.telefone}</span>}
               {config?.telefone && config?.email && <span> | </span>}
               {config?.email && <span>{config.email}</span>}
-              {config?.cnpj && <><br/>CNPJ: {config.cnpj}</>}
+              {config?.cnpj && <><br/>CNPJ: {config.cnpj}{config?.inscricao_estadual && <span> | IE: {config.inscricao_estadual}</span>}</>}
             </div>
           </div>
         </div>

@@ -28,7 +28,7 @@ export async function getTenantConfig() {
 
     const { data } = await supabase
       .from('tenants')
-      .select('id, name, cnpj, telefone, email, endereco, cep, logo_url')
+      .select('id, name, cnpj, inscricao_estadual, telefone, email, endereco, cep, logo_url')
       .eq('id', tenantId)
       .single()
 
@@ -56,6 +56,7 @@ export async function updateTenantConfig(formData: FormData) {
     const rawData = {
       name: formData.get("name") as string,
       cnpj: formData.get("cnpj") as string,
+      inscricao_estadual: formData.get("inscricao_estadual") as string,
       telefone: formData.get("telefone") as string,
       email: formData.get("email") as string,
       endereco: formData.get("endereco") as string,

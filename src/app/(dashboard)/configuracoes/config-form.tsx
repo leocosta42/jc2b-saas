@@ -10,6 +10,7 @@ interface ConfigFormProps {
   config?: {
     name: string
     cnpj?: string | null
+    inscricao_estadual?: string | null
     telefone?: string | null
     email?: string | null
     endereco?: string | null
@@ -100,6 +101,10 @@ export function ConfigForm({ config }: ConfigFormProps) {
           <div className="space-y-2">
             <label htmlFor="cnpj" className="text-sm font-medium leading-none">CNPJ</label>
             <input id="cnpj" name="cnpj" defaultValue={config?.cnpj || ""} placeholder="00.000.000/0001-00" className={inputClass} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="inscricao_estadual" className="text-sm font-medium leading-none">Inscrição Estadual (IE)</label>
+            <input id="inscricao_estadual" name="inscricao_estadual" defaultValue={config?.inscricao_estadual || ""} placeholder="Ex: 123.456.789.012" className={inputClass} />
           </div>
         </div>
       </div>
