@@ -59,9 +59,9 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
         <td className="text-center w-10">{item.unidade_medida || 'UN'}</td>
         <td className="text-center w-16">{item.produtos?.ncm || '-'}</td>
         <td className="text-left px-2">{item.produtos?.nome || 'Produto não encontrado'}</td>
-        <td className="text-right px-2 w-20">{preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td className="text-left px-2 w-20">{preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
         <td className="text-center w-12">{desc > 0 ? `${desc}%` : ''}</td>
-        <td className="text-right px-2 font-medium w-24">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td className="text-left px-2 font-medium w-24">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
       </tr>
     )
   })
@@ -78,9 +78,9 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
           <td className="text-center w-10"></td>
           <td className="text-center w-16"></td>
           <td className="text-left px-2"></td>
-          <td className="text-right px-2 w-20"></td>
+          <td className="text-left px-2 w-20"></td>
           <td className="text-center w-12"></td>
-          <td className="text-right px-2 w-24"></td>
+          <td className="text-left px-2 w-24"></td>
         </tr>
       )
     }
@@ -195,9 +195,9 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
                 <th className="font-normal w-10 py-1">U.M</th>
                 <th className="font-normal w-16 py-1">NCM</th>
                 <th className="font-normal text-left px-2 py-1">Descrição</th>
-                <th className="font-normal w-20 text-right px-2 py-1">Valor R$ unit.</th>
+                <th className="font-normal w-20 text-left px-2 py-1">Valor R$ unit.</th>
                 <th className="font-normal w-12 py-1">Desc %</th>
-                <th className="font-normal w-24 text-right px-2 py-1">Sub total R$</th>
+                <th className="font-normal w-24 text-left px-2 py-1">Sub total R$</th>
               </tr>
             </thead>
             <tbody>
