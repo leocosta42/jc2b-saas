@@ -53,15 +53,15 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
 
     return (
       <tr key={item.id} className="text-[11px] border-b border-gray-300 h-6">
-        <td className="text-center">{i + 1}</td>
-        <td className="text-center">{item.produtos?.sku || '-'}</td>
-        <td className="text-center">{qtde}</td>
-        <td className="text-center">{item.unidade_medida || 'UN'}</td>
-        <td className="text-center">{item.produtos?.ncm || '-'}</td>
+        <td className="text-center w-8">{i + 1}</td>
+        <td className="text-center w-16">{item.produtos?.sku || '-'}</td>
+        <td className="text-center w-12">{qtde}</td>
+        <td className="text-center w-10">{item.unidade_medida || 'UN'}</td>
+        <td className="text-center w-16">{item.produtos?.ncm || '-'}</td>
         <td className="text-left px-2">{item.produtos?.nome || 'Produto não encontrado'}</td>
-        <td className="text-right px-2">{preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-        <td className="text-center">{desc > 0 ? `${desc}%` : ''}</td>
-        <td className="text-right px-2 font-medium">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td className="text-right px-2 w-20">{preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td className="text-center w-12">{desc > 0 ? `${desc}%` : ''}</td>
+        <td className="text-right px-2 font-medium w-24">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
       </tr>
     )
   })
@@ -72,15 +72,15 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
     for (let i = itensRender.length; i < maxLines; i++) {
       itensRender.push(
         <tr key={`empty-${i}`} className="text-[11px] border-b border-gray-300 h-6">
-          <td className="text-center"></td>
-          <td className="text-center"></td>
-          <td className="text-center"></td>
-          <td className="text-center"></td>
-          <td className="text-center"></td>
+          <td className="text-center w-8"></td>
+          <td className="text-center w-16"></td>
+          <td className="text-center w-12"></td>
+          <td className="text-center w-10"></td>
+          <td className="text-center w-16"></td>
           <td className="text-left px-2"></td>
-          <td className="text-right px-2"></td>
-          <td className="text-center"></td>
-          <td className="text-right px-2"></td>
+          <td className="text-right px-2 w-20"></td>
+          <td className="text-center w-12"></td>
+          <td className="text-right px-2 w-24"></td>
         </tr>
       )
     }
