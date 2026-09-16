@@ -708,11 +708,12 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
                 </thead>
                 <tbody className="divide-y divide-border/30">
                   {listaClientes
-                    .filter(c => !buscaModalCliente || 
-                                (c.codigo?.toLowerCase() || '').includes(buscaModalCliente.toLowerCase()) || 
-                                c.nome.toLowerCase().includes(buscaModalCliente.toLowerCase()) || 
+                    .filter(c => !buscaModalCliente ||
+                                (c.codigo?.toLowerCase() || '').includes(buscaModalCliente.toLowerCase()) ||
+                                c.nome.toLowerCase().includes(buscaModalCliente.toLowerCase()) ||
                                 (c.cpf_cnpj || '').includes(buscaModalCliente)
                     )
+                    .sort((a, b) => (a.codigo || '').localeCompare(b.codigo || '', 'pt-BR'))
                     .map(c => (
                       <tr 
                         key={c.id} 
