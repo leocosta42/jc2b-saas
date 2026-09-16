@@ -98,15 +98,25 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
     const c = listaClientes.find(cli => cli.id === pedidoEdit?.cliente_id)
     return c?.codigo || ""
   })
-  const [clienteDeletedoWarning, setClienteDeletedoWarning] = useState(() => {
-    // Verifica se o pedidoEdit tem cliente_id mas clientes é null (cliente foi deletado)
-    if (pedidoEdit?.cliente_id && pedidoEdit?.clientes === null) {
-      return true
-    }
-    return false
-  })
-
   const clienteSelecionado = listaClientes.find(c => c.id === clienteId)
+
+  // Se estamos editando e o cliente do pedido não está na lista, busca e adiciona
+  useEffect(() => {
+    if (pedidoEdit?.cliente_id && !clienteSelecionado && pedidoEdit?.clientes) {
+      // O cliente existe nos dados do pedido mas não está em listaClientes
+      // Adiciona ele à lista para que possa ser selecionado
+      const clienteDosPedido = pedidoEdit.clientes
+      if (clienteDosPedido && typeof clienteDosPedido === 'object' && !Array.isArray(clienteDosPedido)) {
+        setListaClientes(prev => {
+          // Evita duplicatas
+          if (prev.some(c => c.id === clienteDosPedido.id)) return prev
+          return [clienteDosPedido, ...prev]
+        })
+        setClienteId(clienteDosPedido.id)
+        setInputClienteCodigo(clienteDosPedido.codigo || "")
+      }
+    }
+  }, [pedidoEdit, clienteSelecionado])
 
   const handleProdutoChange = (index: number, produtoId: string) => {
     const produto = listaProdutos.find(p => p.id === produtoId)
@@ -226,13 +236,6 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
   const title = isEdit ? `Editar ${tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido'}` : `Novo ${tipo === 'ORCAMENTO' ? 'Orçamento' : 'Pedido de Venda'}`
   const backLink = tipo === 'ORCAMENTO' ? '/orcamentos' : '/pedidos'
 
-  // Se cliente foi deletado, limpa o clienteId para forçar reselecionar
-  useEffect(() => {
-    if (clienteDeletedoWarning && clienteId) {
-      setClienteId("")
-    }
-  }, [clienteDeletedoWarning])
-
   return (
     <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 min-h-screen max-w-[1600px] w-full mx-auto">
       {/* Header */}
@@ -276,11 +279,6 @@ export function FormularioVenda({ tipo, dadosForm, isEdit, pedidoEdit }: Props) 
             <div className="p-4 grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <label className="text-sm font-medium">Cliente *</label>
-                {clienteDeletedoWarning && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-800">
-                    <strong>Aviso:</strong> O cliente original deste documento foi deletado. Por favor, selecione um novo cliente.
-                  </div>
-                )}
                 <div className="flex gap-2">
                   <div className="relative w-32">
                     <input 
