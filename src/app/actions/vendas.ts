@@ -483,9 +483,15 @@ export async function getPedidoCompletoById(id: string) {
     .from('pedidos')
     .select(`
       id, tipo, cliente_id, vendedor_id, data_emissao, data_entrega, forma_pagamento, observacoes, status, valor_frete, tipo_frete, desconto_total, peso_total,
+      clientes (
+        id, codigo, nome, cpf_cnpj, inscricao, rua, numero, complemento, bairro, cidade, estado, cep, celular, email
+      ),
+      vendedores (
+        id, nome
+      ),
       itens_pedido (
         id, produto_id, quantidade, preco_unitario, desconto_percentual, unidade_medida,
-        produtos ( sku, nome, peso )
+        produtos ( id, sku, nome, ncm, peso, preco_venda, quantidade_estoque )
       )
     `)
     .eq('id', id)
