@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createCliente } from "@/app/actions/clientes"
 import { useTransition, useState } from "react"
+import { toast } from "sonner"
 
 export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
   const router = useRouter()
@@ -17,6 +18,30 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
   const [estado, setEstado] = useState("")
   const [codigo, setCodigo] = useState(nextCodigo)
   const [buscandoCep, setBuscandoCep] = useState(false)
+
+  // Funções de validação para campos numéricos
+  const validateNumericField = (value: string, fieldName: string, allowDashes = true, allowParens = true): string => {
+    let cleaned = value
+
+    // Permite apenas dígitos, e opcionalmente dashes e parênteses
+    if (allowDashes && allowParens) {
+      cleaned = value.replace(/[^\d\-()\s]/g, '')
+    } else if (allowDashes) {
+      cleaned = value.replace(/[^\d\-\s]/g, '')
+    } else if (allowParens) {
+      cleaned = value.replace(/[^\d()\s]/g, '')
+    } else {
+      cleaned = value.replace(/\D/g, '')
+    }
+
+    if (cleaned !== value) {
+      toast.error(`${fieldName}`, {
+        description: "Apenas números são permitidos neste campo"
+      })
+    }
+
+    return cleaned
+  }
 
   const handleCepBlur = async () => {
     const limpo = cep.replace(/\D/g, '')
@@ -31,10 +56,14 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
           setCidade(data.localidade || "")
           setEstado(data.uf || "")
         } else {
-          alert("CEP não encontrado. Verifique o número digitado.")
+          toast.error("CEP não encontrado", {
+            description: "Verifique o número digitado."
+          })
         }
       } catch {
-        alert("Erro ao buscar CEP. Verifique sua conexão.")
+        toast.error("Erro ao buscar CEP", {
+          description: "Verifique sua conexão."
+        })
       } finally {
         setBuscandoCep(false)
       }
@@ -107,7 +136,16 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="documento" className="text-sm font-medium leading-none">CPF/CNPJ</label>
-                  <input id="documento" name="documento" placeholder="000.000.000-00 ou 00.000.000/0000-00" className={inputClass} />
+                  <input
+                    id="documento"
+                    name="documento"
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                    className={inputClass}
+                    onChange={(e) => {
+                      const cleaned = validateNumericField(e.target.value, "CPF/CNPJ", true, false)
+                      e.target.value = cleaned
+                    }}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="inscricao" className="text-sm font-medium leading-none">Insc. Estadual</label>
@@ -139,7 +177,10 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
                   <input
                     id="cep" name="cep"
                     value={cep}
-                    onChange={(e) => setCep(e.target.value)}
+                    onChange={(e) => {
+                      const cleaned = validateNumericField(e.target.value, "CEP", true, false)
+                      setCep(cleaned)
+                    }}
                     onBlur={handleCepBlur}
                     placeholder="00000-000"
                     className={inputClass}
@@ -152,7 +193,16 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="numero" className="text-sm font-medium leading-none">Número</label>
-                  <input id="numero" name="numero" placeholder="Ex: 123" className={inputClass} />
+                  <input
+                    id="numero"
+                    name="numero"
+                    placeholder="Ex: 123"
+                    className={inputClass}
+                    onChange={(e) => {
+                      const cleaned = validateNumericField(e.target.value, "Número", false, false)
+                      e.target.value = cleaned
+                    }}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="complemento" className="text-sm font-medium leading-none">Complemento</label>
@@ -184,7 +234,17 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
               <div className="p-6 grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label htmlFor="celular" className="text-sm font-medium leading-none">Celular <span className="text-red-500">*</span></label>
-                  <input id="celular" name="celular" placeholder="(00) 90000-0000" className={inputClass} required />
+                  <input
+                    id="celular"
+                    name="celular"
+                    placeholder="(00) 90000-0000"
+                    className={inputClass}
+                    required
+                    onChange={(e) => {
+                      const cleaned = validateNumericField(e.target.value, "Celular", true, true)
+                      e.target.value = cleaned
+                    }}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium leading-none">E-mail</label>
