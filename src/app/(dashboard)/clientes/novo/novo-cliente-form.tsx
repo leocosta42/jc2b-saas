@@ -142,12 +142,7 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
                     placeholder="000.000.000-00 ou 00.000.000/0000-00"
                     className={inputClass}
                     onChange={(e) => {
-                      const cleaned = e.target.value.replace(/[^\w.\/-]/g, '').toUpperCase()
-                      if (cleaned !== e.target.value) {
-                        toast.error("CPF/CNPJ", {
-                          description: "Use apenas números, letras, pontos, barras e dashes"
-                        })
-                      }
+                      const cleaned = e.target.value.replace(/[^0-9a-zA-Z.\/-]/g, '').toUpperCase()
                       e.target.value = cleaned
                     }}
                   />
