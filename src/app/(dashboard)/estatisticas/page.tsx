@@ -12,34 +12,32 @@ export default async function EstatisticasPage() {
   const { count: fornecedoresCount } = await supabase.from('fornecedores').select('*', { count: 'exact', head: true })
   const { count: produtosCount } = await supabase.from('produtos').select('*', { count: 'exact', head: true })
   
-  // 2. Faturamento e Lucro
-  // O ideal seria usar uma RPC function do PostgreSQL para sum(), mas vamos agregar no server side para simplificar o MVP
+  // 2. Faturamento e Lucro - apenas pedidos efetivados (PEDIDO com status 'Aprovado')
   const { data: pedidos } = await supabase
     .from('pedidos')
     .select(`
-      status, 
+      status,
       created_at,
       valor_frete,
       itens_pedido (quantidade, preco_unitario, desconto_percentual)
     `)
-    
+    .eq('tipo', 'PEDIDO')
+    .eq('status', 'Aprovado')
+
   let faturamentoTotal = 0;
   let pedidosAprovados = 0;
-  
+
   if (pedidos) {
     pedidos.forEach(p => {
-      // Ignorar orçamentos não faturados se houver distinção de status
-      if (p.status !== 'Cancelado') {
-        const subtotal = (p.itens_pedido || []).reduce((acc: number, item: any) => {
-          return acc + ((Number(item.quantidade) * Number(item.preco_unitario)) * (1 - (Number(item.desconto_percentual)/100)))
-        }, 0)
-        faturamentoTotal += subtotal + (Number(p.valor_frete) || 0);
-        pedidosAprovados++;
-      }
+      const subtotal = (p.itens_pedido || []).reduce((acc: number, item: any) => {
+        return acc + ((Number(item.quantidade) * Number(item.preco_unitario)) * (1 - (Number(item.desconto_percentual)/100)))
+      }, 0)
+      faturamentoTotal += subtotal + (Number(p.valor_frete) || 0);
+      pedidosAprovados++;
     })
   }
 
-  // 3. Gerar a Base de Estatísticas Detalhada (100 ultimos itens vendidos)
+  // 3. Gerar a Base de Estatísticas Detalhada (100 ultimos itens vendidos - apenas pedidos efetivados)
   const { data: itensVendidos } = await supabase
     .from('itens_pedido')
     .select(`
@@ -61,7 +59,8 @@ export default async function EstatisticasPage() {
         preco_custo
       )
     `)
-    .neq('pedidos.status', 'Cancelado')
+    .eq('pedidos.tipo', 'PEDIDO')
+    .eq('pedidos.status', 'Aprovado')
     .order('created_at', { ascending: false })
     .limit(100)
 
