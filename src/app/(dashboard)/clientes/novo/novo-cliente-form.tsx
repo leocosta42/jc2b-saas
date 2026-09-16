@@ -205,12 +205,8 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
                   <input
                     id="numero"
                     name="numero"
-                    placeholder="Ex: 123"
+                    placeholder="Ex: 123 ou 123A"
                     className={inputClass}
-                    onChange={(e) => {
-                      const cleaned = validateNumericField(e.target.value, "Número", false, false)
-                      e.target.value = cleaned
-                    }}
                   />
                 </div>
                 <div className="space-y-2">
