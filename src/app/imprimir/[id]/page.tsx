@@ -151,8 +151,8 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
               <span className="font-semibold">Nome:</span> {cliente.nome}
             </div>
             <div className="col-span-12">
-              <span className="font-semibold">CPF/CNPJ:</span> {cliente.cpf_cnpj || '-'} &nbsp;&nbsp;&nbsp; 
-              <span className="font-semibold">Insc.Est:</span> -
+              <span className="font-semibold">CPF/CNPJ:</span> {cliente.cpf_cnpj || '-'} &nbsp;&nbsp;&nbsp;
+              <span className="font-semibold">Insc.Est:</span> {cliente.inscricao || '-'}
             </div>
             <div className="col-span-12">
               <span className="font-semibold">Endereço:</span> {cliente.rua || ''}, {cliente.numero || ''} {cliente.complemento ? `- ${cliente.complemento}` : ''}

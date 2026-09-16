@@ -118,7 +118,7 @@ export function DocumentoPdf({ doc, config }: { doc: any; config: any }) {
           <Text style={styles.sectionTitle}>DADOS DO CLIENTE</Text>
           <View style={styles.sectionBody}>
             <Text><Text style={styles.bold}>Cód.:</Text> {cliente.codigo || '-'}    <Text style={styles.bold}>Nome:</Text> {cliente.nome}</Text>
-            <Text><Text style={styles.bold}>CPF/CNPJ:</Text> {cliente.cpf_cnpj || '-'}</Text>
+            <Text><Text style={styles.bold}>CPF/CNPJ:</Text> {cliente.cpf_cnpj || '-'}    <Text style={styles.bold}>Insc.Est:</Text> {cliente.inscricao || '-'}</Text>
             <Text><Text style={styles.bold}>Endereço:</Text> {cliente.rua || ''}, {cliente.numero || ''} {cliente.complemento ? `- ${cliente.complemento}` : ''}</Text>
             <Text><Text style={styles.bold}>Bairro:</Text> {cliente.bairro || '-'}    <Text style={styles.bold}>Cidade/UF:</Text> {cliente.cidade || '-'}/{cliente.estado || '-'}</Text>
             <Text><Text style={styles.bold}>CEP:</Text> {cliente.cep || '-'}    <Text style={styles.bold}>Contato:</Text> {cliente.celular || '-'}</Text>
