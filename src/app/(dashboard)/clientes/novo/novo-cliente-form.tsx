@@ -142,14 +142,28 @@ export function NovoClienteForm({ nextCodigo = "" }: { nextCodigo?: string }) {
                     placeholder="000.000.000-00 ou 00.000.000/0000-00"
                     className={inputClass}
                     onChange={(e) => {
-                      const cleaned = validateNumericField(e.target.value, "CPF/CNPJ", true, false)
+                      const cleaned = e.target.value.replace(/[^\w.\/-]/g, '').toUpperCase()
+                      if (cleaned !== e.target.value) {
+                        toast.error("CPF/CNPJ", {
+                          description: "Use apenas números, letras, pontos, barras e dashes"
+                        })
+                      }
                       e.target.value = cleaned
                     }}
                   />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="inscricao" className="text-sm font-medium leading-none">Insc. Estadual</label>
-                  <input id="inscricao" name="inscricao" placeholder="Opcional para PF" className={inputClass} />
+                  <input
+                    id="inscricao"
+                    name="inscricao"
+                    placeholder="Opcional para PF"
+                    className={inputClass}
+                    onChange={(e) => {
+                      const cleaned = validateNumericField(e.target.value, "Insc. Estadual", false, false)
+                      e.target.value = cleaned
+                    }}
+                  />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <label htmlFor="bloqueado" className="text-sm font-medium leading-none text-red-500">Status de Bloqueio</label>
